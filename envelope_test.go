@@ -19,7 +19,7 @@ import (
 	"io"
 	"testing"
 
-	"connectrpc.com/connect/internal/assert"
+	"agentio/scalpel/internal/assert"
 )
 
 func TestEnvelope(t *testing.T) {

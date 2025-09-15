@@ -19,8 +19,8 @@
 package collidev1connect
 
 import (
-	connect "connectrpc.com/connect"
-	v1 "connectrpc.com/connect/internal/gen/connect/collide/v1"
+	connect "agentio/scalpel"
+	v1 "agentio/scalpel/internal/gen/connect/collide/v1"
 	context "context"
 	errors "errors"
 	http "net/http"

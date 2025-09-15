@@ -20,8 +20,9 @@ import (
 	"testing"
 	"testing/quick"
 
-	"connectrpc.com/connect/internal/assert"
-	pingv1 "connectrpc.com/connect/internal/gen/connect/ping/v1"
+	"agentio/scalpel/internal/assert"
+	pingv1 "agentio/scalpel/internal/gen/connect/ping/v1"
+
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/structpb"

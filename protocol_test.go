@@ -17,7 +17,7 @@ package connect
 import (
 	"testing"
 
-	"connectrpc.com/connect/internal/assert"
+	"agentio/scalpel/internal/assert"
 )
 
 func TestCanonicalizeContentType(t *testing.T) {

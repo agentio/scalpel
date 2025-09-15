@@ -24,9 +24,9 @@ import (
 	"testing"
 	"time"
 
-	"connectrpc.com/connect/internal/assert"
-	"connectrpc.com/connect/internal/memhttp"
-	"connectrpc.com/connect/internal/memhttp/memhttptest"
+	"agentio/scalpel/internal/assert"
+	"agentio/scalpel/internal/memhttp"
+	"agentio/scalpel/internal/memhttp/memhttptest"
 )
 
 func TestServerTransport(t *testing.T) {

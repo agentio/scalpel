@@ -19,7 +19,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"connectrpc.com/connect/internal/assert"
+	"agentio/scalpel/internal/assert"
 )
 
 func TestErrorWriter(t *testing.T) {

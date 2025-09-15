@@ -17,8 +17,8 @@ package connect_test
 import (
 	"net/http"
 
-	"connectrpc.com/connect/internal/gen/simple/connect/ping/v1/pingv1connect"
-	"connectrpc.com/connect/internal/memhttp"
+	"agentio/scalpel/internal/gen/simple/connect/ping/v1/pingv1connect"
+	"agentio/scalpel/internal/memhttp"
 )
 
 var examplePingServer *memhttp.Server

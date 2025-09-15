@@ -19,8 +19,8 @@
 package genconnect
 
 import (
-	connect "connectrpc.com/connect"
-	gen "connectrpc.com/connect/cmd/protoc-gen-connect-go/internal/testdata/defaultpackage/gen"
+	connect "agentio/scalpel"
+	gen "agentio/scalpel/cmd/protoc-gen-connect-go/internal/testdata/defaultpackage/gen"
 	context "context"
 	errors "errors"
 	http "net/http"

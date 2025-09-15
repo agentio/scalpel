@@ -21,11 +21,12 @@
 package gen
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -120,7 +121,7 @@ const file_simple_proto_rawDesc = "" +
 	"\x12MethodClientStream\x12\x1c.connect.test.simple.Request\x1a\x1d.connect.test.simple.Response\"\x00(\x01\x12U\n" +
 	"\x12MethodServerStream\x12\x1c.connect.test.simple.Request\x1a\x1d.connect.test.simple.Response\"\x000\x01\x12S\n" +
 	"\x10MethodBidiStream\x12\x1c.connect.test.simple.Request\x1a\x1d.connect.test.simple.Response\"\x000\x01B\xe3\x01\n" +
-	"\x17com.connect.test.simpleB\vSimpleProtoP\x01ZMconnectrpc.com/connect/cmd/protoc-gen-connect-go/internal/testdata/simple/gen\xa2\x02\x03CTS\xaa\x02\x13Connect.Test.Simple\xca\x02\x13Connect\\Test\\Simple\xe2\x02\x1fConnect\\Test\\Simple\\GPBMetadata\xea\x02\x15Connect::Test::Simpleb\x06proto3"
+	"\x17com.connect.test.simpleB\vSimpleProtoP\x01ZMagentio/scalpel/cmd/protoc-gen-connect-go/internal/testdata/simple/gen\xa2\x02\x03CTS\xaa\x02\x13Connect.Test.Simple\xca\x02\x13Connect\\Test\\Simple\xe2\x02\x1fConnect\\Test\\Simple\\GPBMetadata\xea\x02\x15Connect::Test::Simpleb\x06proto3"
 
 var (
 	file_simple_proto_rawDescOnce sync.Once

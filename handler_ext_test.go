@@ -27,11 +27,12 @@ import (
 	"sync"
 	"testing"
 
-	connect "connectrpc.com/connect"
-	"connectrpc.com/connect/internal/assert"
-	pingv1 "connectrpc.com/connect/internal/gen/connect/ping/v1"
-	"connectrpc.com/connect/internal/gen/generics/connect/ping/v1/pingv1connect"
-	"connectrpc.com/connect/internal/memhttp/memhttptest"
+	connect "agentio/scalpel"
+	"agentio/scalpel/internal/assert"
+	pingv1 "agentio/scalpel/internal/gen/connect/ping/v1"
+	"agentio/scalpel/internal/gen/generics/connect/ping/v1/pingv1connect"
+	"agentio/scalpel/internal/memhttp/memhttptest"
+
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/dynamicpb"

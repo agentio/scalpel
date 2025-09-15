@@ -24,10 +24,10 @@ import (
 	"strings"
 	"testing"
 
-	connect "connectrpc.com/connect"
-	"connectrpc.com/connect/internal/assert"
-	pingv1 "connectrpc.com/connect/internal/gen/connect/ping/v1"
-	"connectrpc.com/connect/internal/gen/simple/connect/ping/v1/pingv1connect"
+	connect "agentio/scalpel"
+	"agentio/scalpel/internal/assert"
+	pingv1 "agentio/scalpel/internal/gen/connect/ping/v1"
+	"agentio/scalpel/internal/gen/simple/connect/ping/v1/pingv1connect"
 )
 
 func BenchmarkConnect(b *testing.B) {

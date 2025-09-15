@@ -20,7 +20,7 @@ import (
 	"log"
 	"net/http"
 
-	connect "connectrpc.com/connect"
+	connect "agentio/scalpel"
 )
 
 // NewHelloHandler is an example HTTP handler. In a real application, it might

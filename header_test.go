@@ -20,7 +20,7 @@ import (
 	"testing"
 	"testing/quick"
 
-	"connectrpc.com/connect/internal/assert"
+	"agentio/scalpel/internal/assert"
 )
 
 func TestBinaryEncodingQuick(t *testing.T) {

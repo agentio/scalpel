@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"connectrpc.com/connect/internal/assert"
+	"agentio/scalpel/internal/assert"
 )
 
 func TestCode(t *testing.T) {

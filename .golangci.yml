@@ -19,7 +19,7 @@ linters-settings:
   importas:
     no-unaliased: true
     alias:
-      - pkg: connectrpc.com/connect/internal/gen/connect/ping/v1
+      - pkg: agentio/scalpel/internal/gen/connect/ping/v1
         alias: pingv1
   varnamelen:
     ignore-decls:

@@ -21,7 +21,7 @@
 package gen
 
 import (
-	connect "connectrpc.com/connect"
+	connect "agentio/scalpel"
 	context "context"
 	errors "errors"
 	http "net/http"

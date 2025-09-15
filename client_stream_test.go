@@ -20,8 +20,8 @@ import (
 	"net/http"
 	"testing"
 
-	"connectrpc.com/connect/internal/assert"
-	pingv1 "connectrpc.com/connect/internal/gen/connect/ping/v1"
+	"agentio/scalpel/internal/assert"
+	pingv1 "agentio/scalpel/internal/gen/connect/ping/v1"
 )
 
 const expectedStreamErrorMessage = "no stream initialized"
@@ -90,7 +90,7 @@ func TestServerStreamForClient(t *testing.T) {
 	}
 	// Ensure that each call to Receive allocates a new message. This helps
 	// vtprotobuf, which doesn't automatically zero messages before unmarshaling
-	// (see https://connectrpc.com/connect/issues/345), and it's also
+	// (see https://agentio/scalpel/issues/345), and it's also
 	// less error-prone for users.
 	assert.True(t, stream.Receive())
 	first := fmt.Sprintf("%p", stream.Msg())

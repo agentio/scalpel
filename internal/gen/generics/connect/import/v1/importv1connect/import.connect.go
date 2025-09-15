@@ -19,8 +19,8 @@
 package importv1connect
 
 import (
-	connect "connectrpc.com/connect"
-	_ "connectrpc.com/connect/internal/gen/connect/import/v1"
+	connect "agentio/scalpel"
+	_ "agentio/scalpel/internal/gen/connect/import/v1"
 	http "net/http"
 )
 

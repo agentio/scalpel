@@ -73,7 +73,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	connect "connectrpc.com/connect"
+	connect "agentio/scalpel"
+
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -85,7 +86,7 @@ const (
 	errorsPackage  = protogen.GoImportPath("errors")
 	httpPackage    = protogen.GoImportPath("net/http")
 	stringsPackage = protogen.GoImportPath("strings")
-	connectPackage = protogen.GoImportPath("connectrpc.com/connect")
+	connectPackage = protogen.GoImportPath("agentio/scalpel")
 
 	generatedFilenameExtension = ".connect.go"
 	defaultPackageSuffix       = "connect"

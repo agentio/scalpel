@@ -21,11 +21,12 @@
 package gen
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -117,7 +118,7 @@ const file_defaultpackage_proto_rawDesc = "" +
 	"\bResponse2h\n" +
 	"\vTestService\x12Y\n" +
 	"\x06Method\x12%.connect.test.default_package.Request\x1a&.connect.test.default_package.Response\"\x00B\x9c\x02\n" +
-	" com.connect.test.default_packageB\x13DefaultpackageProtoP\x01ZUconnectrpc.com/connect/cmd/protoc-gen-connect-go/internal/testdata/defaultpackage/gen\xa2\x02\x03CTD\xaa\x02\x1bConnect.Test.DefaultPackage\xca\x02\x1bConnect\\Test\\DefaultPackage\xe2\x02'Connect\\Test\\DefaultPackage\\GPBMetadata\xea\x02\x1dConnect::Test::DefaultPackageb\x06proto3"
+	" com.connect.test.default_packageB\x13DefaultpackageProtoP\x01ZUagentio/scalpel/cmd/protoc-gen-connect-go/internal/testdata/defaultpackage/gen\xa2\x02\x03CTD\xaa\x02\x1bConnect.Test.DefaultPackage\xca\x02\x1bConnect\\Test\\DefaultPackage\xe2\x02'Connect\\Test\\DefaultPackage\\GPBMetadata\xea\x02\x1dConnect::Test::DefaultPackageb\x06proto3"
 
 var (
 	file_defaultpackage_proto_rawDescOnce sync.Once

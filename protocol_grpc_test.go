@@ -26,7 +26,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"connectrpc.com/connect/internal/assert"
+	"agentio/scalpel/internal/assert"
+
 	"github.com/google/go-cmp/cmp"
 )
 

@@ -1,4 +1,4 @@
-module connectrpc.com/connect
+module agentio/scalpel
 
 go 1.24.0
 

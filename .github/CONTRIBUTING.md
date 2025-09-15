@@ -24,7 +24,7 @@ mkdir -p $GOPATH/src/connectrpc.com
 cd $GOPATH/src/connectrpc.com
 git clone git@github.com:your_github_username/connect-go.git connect
 cd connect
-git remote add upstream https://github.com/connectrpc/connect-go.git
+git remote add upstream https://github.com/agentio/scalpel-go.git
 git fetch upstream
 ```
 
@@ -40,7 +40,7 @@ make
 Start by creating a new branch for your changes:
 
 ```
-cd $GOPATH/src/connectrpc.com/connect
+cd $GOPATH/src/agentio/scalpel
 git checkout main
 git fetch upstream
 git rebase upstream/main
@@ -70,7 +70,7 @@ We're much more likely to approve your changes if you:
 * Write a [good commit message][commit-message].
 * Maintain backward compatibility.
 
-[fork]: https://github.com/connectrpc/connect-go/fork
-[open-issue]: https://github.com/connectrpc/connect-go/issues/new
+[fork]: https://github.com/agentio/scalpel-go/fork
+[open-issue]: https://github.com/agentio/scalpel-go/issues/new
 [dco]: https://developercertificate.org
 [commit-message]: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html

@@ -24,12 +24,13 @@
 package statusv1
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	anypb "google.golang.org/protobuf/types/known/anypb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	anypb "google.golang.org/protobuf/types/known/anypb"
 )
 
 const (
@@ -112,7 +113,7 @@ const file_connectext_grpc_status_v1_status_proto_rawDesc = "" +
 	"\x04code\x18\x01 \x01(\x05R\x04code\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12.\n" +
 	"\adetails\x18\x03 \x03(\v2\x14.google.protobuf.AnyR\adetailsB\xc3\x01\n" +
-	"\x12com.grpc.status.v1B\vStatusProtoP\x01ZFconnectrpc.com/connect/internal/gen/connectext/grpc/status/v1;statusv1\xa2\x02\x03GSX\xaa\x02\x0eGrpc.Status.V1\xca\x02\x0eGrpc\\Status\\V1\xe2\x02\x1aGrpc\\Status\\V1\\GPBMetadata\xea\x02\x10Grpc::Status::V1b\x06proto3"
+	"\x12com.grpc.status.v1B\vStatusProtoP\x01ZFagentio/scalpel/internal/gen/connectext/grpc/status/v1;statusv1\xa2\x02\x03GSX\xaa\x02\x0eGrpc.Status.V1\xca\x02\x0eGrpc\\Status\\V1\xe2\x02\x1aGrpc\\Status\\V1\\GPBMetadata\xea\x02\x10Grpc::Status::V1b\x06proto3"
 
 var (
 	file_connectext_grpc_status_v1_status_proto_rawDescOnce sync.Once

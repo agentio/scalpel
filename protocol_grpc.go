@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	statusv1 "connectrpc.com/connect/internal/gen/connectext/grpc/status/v1"
+	statusv1 "agentio/scalpel/internal/gen/connectext/grpc/status/v1"
 )
 
 const (
@@ -831,7 +831,7 @@ func grpcContentTypeForCodecName(web bool, name string) string {
 	if name == codecNameProto {
 		// For compatibility with Google Cloud Platform's frontends, prefer an
 		// implicit default codec. See
-		// https://github.com/connectrpc/connect-go/pull/655#issuecomment-1915754523
+		// https://github.com/agentio/scalpel-go/pull/655#issuecomment-1915754523
 		// for details.
 		return grpcContentTypeDefault
 	}

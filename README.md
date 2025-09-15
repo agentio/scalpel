@@ -1,9 +1,9 @@
 Connect
 =======
 
-[![Build](https://github.com/connectrpc/connect-go/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/connectrpc/connect-go/actions/workflows/ci.yaml)
-[![Report Card](https://goreportcard.com/badge/connectrpc.com/connect)](https://goreportcard.com/report/connectrpc.com/connect)
-[![GoDoc](https://pkg.go.dev/badge/connectrpc.com/connect.svg)](https://pkg.go.dev/connectrpc.com/connect)
+[![Build](https://github.com/agentio/scalpel-go/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/agentio/scalpel-go/actions/workflows/ci.yaml)
+[![Report Card](https://goreportcard.com/badge/agentio/scalpel)](https://goreportcard.com/report/agentio/scalpel)
+[![GoDoc](https://pkg.go.dev/badge/agentio/scalpel.svg)](https://pkg.go.dev/agentio/scalpel)
 [![Slack](https://img.shields.io/badge/slack-buf-%23e01563)][slack]
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8972/badge)](https://www.bestpractices.dev/projects/8972)
 
@@ -24,7 +24,7 @@ using `curl`. Try it with our live demo:
 curl \
     --header "Content-Type: application/json" \
     --data '{"sentence": "I feel happy."}' \
-    https://demo.connectrpc.com/connectrpc.eliza.v1.ElizaService/Say
+    https://demo.agentio/scalpelrpc.eliza.v1.ElizaService/Say
 ```
 
 Handlers and clients also support the gRPC and gRPC-Web protocols, including
@@ -36,7 +36,7 @@ standalone packages. Instead of cURL, we could call our API with a gRPC client:
 go install github.com/bufbuild/buf/cmd/buf@latest
 buf curl --protocol grpc \
     --data '{"sentence": "I feel happy."}' \
-    https://demo.connectrpc.com/connectrpc.eliza.v1.ElizaService/Say
+    https://demo.agentio/scalpelrpc.eliza.v1.ElizaService/Say
 ```
 
 Under the hood, Connect is just [Protocol Buffers][protobuf] and the standard
@@ -64,9 +64,9 @@ import (
   "log"
   "net/http"
 
-  "connectrpc.com/connect"
-  pingv1 "connectrpc.com/connect/internal/gen/connect/ping/v1"
-  "connectrpc.com/connect/internal/gen/connect/ping/v1/pingv1connect"
+  "agentio/scalpel"
+  pingv1 "agentio/scalpel/internal/gen/connect/ping/v1"
+  "agentio/scalpel/internal/gen/connect/ping/v1/pingv1connect"
 )
 
 type PingServer struct {
@@ -119,9 +119,9 @@ import (
   "log"
   "net/http"
 
-  "connectrpc.com/connect"
-  pingv1 "connectrpc.com/connect/internal/gen/connect/ping/v1"
-  "connectrpc.com/connect/internal/gen/connect/ping/v1/pingv1connect"
+  "agentio/scalpel"
+  pingv1 "agentio/scalpel/internal/gen/connect/ping/v1"
+  "agentio/scalpel/internal/gen/connect/ping/v1/pingv1connect"
 )
 
 func main() {
@@ -182,7 +182,7 @@ Offered under the [Apache 2 license][license].
 [docs-deployment]: https://connectrpc.com/docs/go/deployment
 [docs]: https://connectrpc.com
 [go-support-policy]: https://golang.org/doc/devel/release#policy
-[license]: https://github.com/connectrpc/connect-go/blob/main/LICENSE
+[license]: https://github.com/agentio/scalpel-go/blob/main/LICENSE
 [protobuf]: https://developers.google.com/protocol-buffers
 [protocol]: https://connectrpc.com/docs/protocol
 [slack]: https://buf.build/links/slack

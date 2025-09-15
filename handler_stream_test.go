@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"testing"
 
-	"connectrpc.com/connect/internal/assert"
-	pingv1 "connectrpc.com/connect/internal/gen/connect/ping/v1"
+	"agentio/scalpel/internal/assert"
+	pingv1 "agentio/scalpel/internal/gen/connect/ping/v1"
 )
 
 func TestClientStreamIterator(t *testing.T) {

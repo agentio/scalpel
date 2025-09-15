@@ -37,14 +37,15 @@ import (
 	"testing"
 	"time"
 
-	connect "connectrpc.com/connect"
-	"connectrpc.com/connect/internal/assert"
-	pingv1 "connectrpc.com/connect/internal/gen/connect/ping/v1"
-	"connectrpc.com/connect/internal/gen/generics/connect/import/v1/importv1connect"
-	"connectrpc.com/connect/internal/gen/generics/connect/ping/v1/pingv1connect"
-	pingv1connectsimple "connectrpc.com/connect/internal/gen/simple/connect/ping/v1/pingv1connect"
-	"connectrpc.com/connect/internal/memhttp"
-	"connectrpc.com/connect/internal/memhttp/memhttptest"
+	connect "agentio/scalpel"
+	"agentio/scalpel/internal/assert"
+	pingv1 "agentio/scalpel/internal/gen/connect/ping/v1"
+	"agentio/scalpel/internal/gen/generics/connect/import/v1/importv1connect"
+	"agentio/scalpel/internal/gen/generics/connect/ping/v1/pingv1connect"
+	pingv1connectsimple "agentio/scalpel/internal/gen/simple/connect/ping/v1/pingv1connect"
+	"agentio/scalpel/internal/memhttp"
+	"agentio/scalpel/internal/memhttp/memhttptest"
+
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -1360,7 +1361,7 @@ func TestCustomCompression(t *testing.T) {
 }
 
 func TestClientWithoutGzipSupport(t *testing.T) {
-	// See https://connectrpc.com/connect/pull/349 for why we want to
+	// See https://agentio/scalpel/pull/349 for why we want to
 	// support this. TL;DR is that Microsoft's dapr sidecar can't handle
 	// asymmetric compression.
 	t.Parallel()

@@ -18,8 +18,9 @@ import (
 	"net/http"
 	"testing"
 
-	"connectrpc.com/connect/internal/assert"
-	"connectrpc.com/connect/internal/memhttp/memhttptest"
+	"agentio/scalpel/internal/assert"
+	"agentio/scalpel/internal/memhttp/memhttptest"
+
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
