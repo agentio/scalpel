@@ -32,7 +32,6 @@ import (
 	pingv1 "github.com/agentio/scalpel/internal/gen/connect/ping/v1"
 	"github.com/agentio/scalpel/internal/gen/generics/connect/ping/v1/pingv1connect"
 	"github.com/agentio/scalpel/internal/memhttp/memhttptest"
-
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/dynamicpb"

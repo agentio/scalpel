@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/agentio/scalpel/internal/assert"
-
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"

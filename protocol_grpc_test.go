@@ -27,7 +27,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/agentio/scalpel/internal/assert"
-
 	"github.com/google/go-cmp/cmp"
 )
 

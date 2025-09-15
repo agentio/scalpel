@@ -70,7 +70,7 @@ issues:
       path: client_example_test.go
     # The generated file is effectively a global receiver.
     - linters: [varnamelen]
-      path: cmd/protoc-gen-connect-go
+      path: cmd/protoc-gen-scalpel-go
       text: "parameter name 'g' is too short"
     # Thorough error logging and timeout config make this example unreadably long.
     - linters: [errcheck, gosec]
@@ -115,9 +115,9 @@ issues:
     # We want to show examples with http.Get
     - linters: [noctx]
       path: internal/memhttp/memhttp_test.go
-    # Allow fmt.Sprintf for cmd/protoc-gen-connect-go for consistency
+    # Allow fmt.Sprintf for cmd/protoc-gen-scalpel-go for consistency
     - linters: [perfsprint]
-      path: cmd/protoc-gen-connect-go/main.go
+      path: cmd/protoc-gen-scalpel-go/main.go
     # Allow non-canonical headers in tests
     - linters: [canonicalheader]
       path: '.*_test.go'

@@ -45,7 +45,6 @@ import (
 	pingv1connectsimple "github.com/agentio/scalpel/internal/gen/simple/connect/ping/v1/pingv1connect"
 	"github.com/agentio/scalpel/internal/memhttp"
 	"github.com/agentio/scalpel/internal/memhttp/memhttptest"
-
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/known/wrapperspb"

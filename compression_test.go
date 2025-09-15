@@ -20,7 +20,6 @@ import (
 
 	"github.com/agentio/scalpel/internal/assert"
 	"github.com/agentio/scalpel/internal/memhttp/memhttptest"
-
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 

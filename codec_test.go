@@ -22,7 +22,6 @@ import (
 
 	"github.com/agentio/scalpel/internal/assert"
 	pingv1 "github.com/agentio/scalpel/internal/gen/connect/ping/v1"
-
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/structpb"
