@@ -1,11 +1,11 @@
-Connect
+Scalpel
 =======
 
-[![Build](https://github.com/agentio/scalpel-go/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/agentio/scalpel-go/actions/workflows/ci.yaml)
-[![Report Card](https://goreportcard.com/badge/agentio/scalpel)](https://goreportcard.com/report/agentio/scalpel)
-[![GoDoc](https://pkg.go.dev/badge/agentio/scalpel.svg)](https://pkg.go.dev/agentio/scalpel)
-[![Slack](https://img.shields.io/badge/slack-buf-%23e01563)][slack]
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8972/badge)](https://www.bestpractices.dev/projects/8972)
+DO NOT USE! This is a public repo, but is not intended for public use. It's an experimental fork of [connect-go](https://github.com/connectrpc/connect-go) that will probably remove many Connect features.
+
+The original Connect documentation (with usage examples edited for Scalpel) is below.
+
+---
 
 Connect is a slim library for building browser and gRPC-compatible HTTP APIs.
 You write a short [Protocol Buffer][protobuf] schema and implement your
