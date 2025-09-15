@@ -20,9 +20,9 @@ import (
 	"strings"
 	"testing"
 
-	"agentio/scalpel/internal/assert"
-	pingv1 "agentio/scalpel/internal/gen/connect/ping/v1"
-	"agentio/scalpel/internal/memhttp/memhttptest"
+	"github.com/agentio/scalpel/internal/assert"
+	pingv1 "github.com/agentio/scalpel/internal/gen/connect/ping/v1"
+	"github.com/agentio/scalpel/internal/memhttp/memhttptest"
 )
 
 func TestClientUnaryGetFallback(t *testing.T) {

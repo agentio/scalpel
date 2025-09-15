@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	statusv1 "agentio/scalpel/internal/gen/connectext/grpc/status/v1"
+	statusv1 "github.com/agentio/scalpel/internal/gen/connectext/grpc/status/v1"
 )
 
 const (

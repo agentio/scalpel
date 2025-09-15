@@ -20,7 +20,7 @@ import (
 	"testing"
 	"testing/quick"
 
-	"agentio/scalpel/internal/assert"
+	"github.com/agentio/scalpel/internal/assert"
 )
 
 func TestBinaryEncodingQuick(t *testing.T) {

@@ -21,12 +21,11 @@
 package gen
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -115,8 +114,8 @@ const file_noservice_proto_rawDesc = "" +
 	"\x0fnoservice.proto\x12\x17connect.test.no_service\"\t\n" +
 	"\aRequest\"\n" +
 	"\n" +
-	"\bResponseB\xf9\x01\n" +
-	"\x1bcom.connect.test.no_serviceB\x0eNoserviceProtoP\x01ZPagentio/scalpel/cmd/protoc-gen-connect-go/internal/testdata/noservice/gen\xa2\x02\x03CTN\xaa\x02\x16Connect.Test.NoService\xca\x02\x16Connect\\Test\\NoService\xe2\x02\"Connect\\Test\\NoService\\GPBMetadata\xea\x02\x18Connect::Test::NoServiceb\x06proto3"
+	"\bResponseB\xfd\x01\n" +
+	"\x1bcom.connect.test.no_serviceB\x0eNoserviceProtoP\x01ZTgithub.com/agentio/scalpel/cmd/protoc-gen-scalpel-go/internal/testdata/noservice/gen\xa2\x02\x03CTN\xaa\x02\x16Connect.Test.NoService\xca\x02\x16Connect\\Test\\NoService\xe2\x02\"Connect\\Test\\NoService\\GPBMetadata\xea\x02\x18Connect::Test::NoServiceb\x06proto3"
 
 var (
 	file_noservice_proto_rawDescOnce sync.Once

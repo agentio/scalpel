@@ -17,7 +17,7 @@ package connect
 import (
 	"testing"
 
-	"agentio/scalpel/internal/assert"
+	"github.com/agentio/scalpel/internal/assert"
 )
 
 func TestParseProtobufURL(t *testing.T) {

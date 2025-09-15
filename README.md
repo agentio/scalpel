@@ -64,9 +64,9 @@ import (
   "log"
   "net/http"
 
-  "agentio/scalpel"
-  pingv1 "agentio/scalpel/internal/gen/connect/ping/v1"
-  "agentio/scalpel/internal/gen/connect/ping/v1/pingv1connect"
+  "github.com/agentio/scalpel"
+  pingv1 "github.com/agentio/scalpel/internal/gen/connect/ping/v1"
+  "github.com/agentio/scalpel/internal/gen/connect/ping/v1/pingv1connect"
 )
 
 type PingServer struct {
@@ -119,9 +119,9 @@ import (
   "log"
   "net/http"
 
-  "agentio/scalpel"
-  pingv1 "agentio/scalpel/internal/gen/connect/ping/v1"
-  "agentio/scalpel/internal/gen/connect/ping/v1/pingv1connect"
+  "github.com/agentio/scalpel"
+  pingv1 "github.com/agentio/scalpel/internal/gen/connect/ping/v1"
+  "github.com/agentio/scalpel/internal/gen/connect/ping/v1/pingv1connect"
 )
 
 func main() {

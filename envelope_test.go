@@ -19,7 +19,7 @@ import (
 	"io"
 	"testing"
 
-	"agentio/scalpel/internal/assert"
+	"github.com/agentio/scalpel/internal/assert"
 )
 
 func TestEnvelope(t *testing.T) {

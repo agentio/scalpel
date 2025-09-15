@@ -24,9 +24,9 @@ import (
 	"testing"
 	"time"
 
-	"agentio/scalpel/internal/assert"
-	"agentio/scalpel/internal/memhttp"
-	"agentio/scalpel/internal/memhttp/memhttptest"
+	"github.com/agentio/scalpel/internal/assert"
+	"github.com/agentio/scalpel/internal/memhttp"
+	"github.com/agentio/scalpel/internal/memhttp/memhttptest"
 )
 
 func TestServerTransport(t *testing.T) {

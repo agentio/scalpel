@@ -24,7 +24,7 @@ import (
 	"sync"
 	"testing"
 
-	"agentio/scalpel/internal/assert"
+	"github.com/agentio/scalpel/internal/assert"
 )
 
 // TestHTTPCallGetBody tests that the client is able to retry requests on

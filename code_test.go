@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"agentio/scalpel/internal/assert"
+	"github.com/agentio/scalpel/internal/assert"
 )
 
 func TestCode(t *testing.T) {

@@ -20,11 +20,11 @@ import (
 	"net/http"
 	"testing"
 
-	connect "agentio/scalpel"
-	"agentio/scalpel/internal/assert"
-	pingv1 "agentio/scalpel/internal/gen/connect/ping/v1"
-	"agentio/scalpel/internal/gen/generics/connect/ping/v1/pingv1connect"
-	"agentio/scalpel/internal/memhttp/memhttptest"
+	connect "github.com/agentio/scalpel"
+	"github.com/agentio/scalpel/internal/assert"
+	pingv1 "github.com/agentio/scalpel/internal/gen/connect/ping/v1"
+	"github.com/agentio/scalpel/internal/gen/generics/connect/ping/v1/pingv1connect"
+	"github.com/agentio/scalpel/internal/memhttp/memhttptest"
 )
 
 type panicPingServer struct {

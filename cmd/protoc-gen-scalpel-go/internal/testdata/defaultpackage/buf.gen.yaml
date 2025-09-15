@@ -3,12 +3,12 @@ managed:
   enabled: true
   override:
     - file_option: go_package_prefix
-      value: agentio/scalpel/cmd/protoc-gen-connect-go/internal/testdata/defaultpackage/gen
+      value: github.com/agentio/scalpel/cmd/protoc-gen-scalpel-go/internal/testdata/defaultpackage/gen
 plugins:
   - local: protoc-gen-go
     out: gen
     opt: paths=source_relative
-  - local: protoc-gen-connect-go
+  - local: protoc-gen-scalpel-go
     out: gen
     opt: paths=source_relative
 clean: true

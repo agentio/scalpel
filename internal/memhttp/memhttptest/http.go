@@ -19,7 +19,7 @@ import (
 	"net/http"
 	"testing"
 
-	"agentio/scalpel/internal/memhttp"
+	"github.com/agentio/scalpel/internal/memhttp"
 )
 
 // NewServer constructs a [memhttp.Server] with defaults suitable for tests:

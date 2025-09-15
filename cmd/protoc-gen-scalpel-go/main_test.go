@@ -27,9 +27,9 @@ import (
 	"strings"
 	"testing"
 
-	connect "agentio/scalpel"
-	"agentio/scalpel/internal/assert"
-	pingv1 "agentio/scalpel/internal/gen/connect/ping/v1"
+	connect "github.com/agentio/scalpel"
+	"github.com/agentio/scalpel/internal/assert"
+	pingv1 "github.com/agentio/scalpel/internal/gen/connect/ping/v1"
 
 	"github.com/google/go-cmp/cmp"
 	"google.golang.org/protobuf/proto"
@@ -37,14 +37,14 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 
-	defaultpackage "agentio/scalpel/cmd/protoc-gen-connect-go/internal/testdata/defaultpackage/gen"
-	defaultpackageconnect "agentio/scalpel/cmd/protoc-gen-connect-go/internal/testdata/defaultpackage/gen/genconnect"
-	diffpackage "agentio/scalpel/cmd/protoc-gen-connect-go/internal/testdata/diffpackage/gen"
-	diffpackagediff "agentio/scalpel/cmd/protoc-gen-connect-go/internal/testdata/diffpackage/gen/gendiff"
-	noservice "agentio/scalpel/cmd/protoc-gen-connect-go/internal/testdata/noservice/gen"
-	samepackage "agentio/scalpel/cmd/protoc-gen-connect-go/internal/testdata/samepackage/gen"
-	simple "agentio/scalpel/cmd/protoc-gen-connect-go/internal/testdata/simple/gen"
-	_ "agentio/scalpel/cmd/protoc-gen-connect-go/internal/testdata/v1beta1service/gen"
+	defaultpackage "github.com/agentio/scalpel/cmd/protoc-gen-scalpel-go/internal/testdata/defaultpackage/gen"
+	defaultpackageconnect "github.com/agentio/scalpel/cmd/protoc-gen-scalpel-go/internal/testdata/defaultpackage/gen/genconnect"
+	diffpackage "github.com/agentio/scalpel/cmd/protoc-gen-scalpel-go/internal/testdata/diffpackage/gen"
+	diffpackagediff "github.com/agentio/scalpel/cmd/protoc-gen-scalpel-go/internal/testdata/diffpackage/gen/gendiff"
+	noservice "github.com/agentio/scalpel/cmd/protoc-gen-scalpel-go/internal/testdata/noservice/gen"
+	samepackage "github.com/agentio/scalpel/cmd/protoc-gen-scalpel-go/internal/testdata/samepackage/gen"
+	simple "github.com/agentio/scalpel/cmd/protoc-gen-scalpel-go/internal/testdata/simple/gen"
+	_ "github.com/agentio/scalpel/cmd/protoc-gen-scalpel-go/internal/testdata/v1beta1service/gen"
 )
 
 //go:embed internal/testdata
@@ -85,7 +85,7 @@ func TestGenerate(t *testing.T) {
 
 		assert.Equal(t, len(rsp.File), 1)
 		file := rsp.File[0]
-		assert.Equal(t, file.GetName(), "agentio/scalpel/internal/gen/connect/ping/v1/pingv1connect/ping.connect.go")
+		assert.Equal(t, file.GetName(), "github.com/agentio/scalpel/internal/gen/connect/ping/v1/pingv1connect/ping.connect.go")
 		assert.NotZero(t, file.GetContent())
 	})
 	t.Run("defaultpackage.proto", func(t *testing.T) {
@@ -107,7 +107,7 @@ func TestGenerate(t *testing.T) {
 
 		assert.Equal(t, len(rsp.File), 1)
 		file := rsp.File[0]
-		assert.Equal(t, file.GetName(), "agentio/scalpel/cmd/protoc-gen-connect-go/internal/testdata/defaultpackage/gen/genconnect/defaultpackage.connect.go")
+		assert.Equal(t, file.GetName(), "github.com/agentio/scalpel/cmd/protoc-gen-scalpel-go/internal/testdata/defaultpackage/gen/genconnect/defaultpackage.connect.go")
 		assert.NotZero(t, file.GetContent())
 		testCmpToTestdata(t, file.GetContent(), "internal/testdata/defaultpackage/gen/genconnect/defaultpackage.connect.go")
 	})
@@ -127,7 +127,7 @@ func TestGenerate(t *testing.T) {
 
 		assert.Equal(t, len(rsp.File), 1)
 		file := rsp.File[0]
-		assert.Equal(t, file.GetName(), "agentio/scalpel/cmd/protoc-gen-connect-go/internal/testdata/samepackage/gen/samepackage.connect.go")
+		assert.Equal(t, file.GetName(), "github.com/agentio/scalpel/cmd/protoc-gen-scalpel-go/internal/testdata/samepackage/gen/samepackage.connect.go")
 		assert.NotZero(t, file.GetContent())
 		testCmpToTestdata(t, file.GetContent(), "internal/testdata/samepackage/gen/samepackage.connect.go")
 	})
@@ -147,7 +147,7 @@ func TestGenerate(t *testing.T) {
 
 		assert.Equal(t, len(rsp.File), 1)
 		file := rsp.File[0]
-		assert.Equal(t, file.GetName(), "agentio/scalpel/cmd/protoc-gen-connect-go/internal/testdata/diffpackage/gen/gendiff/diffpackage.connect.go")
+		assert.Equal(t, file.GetName(), "github.com/agentio/scalpel/cmd/protoc-gen-scalpel-go/internal/testdata/diffpackage/gen/gendiff/diffpackage.connect.go")
 		assert.NotZero(t, file.GetContent())
 		testCmpToTestdata(t, file.GetContent(), "internal/testdata/diffpackage/gen/gendiff/diffpackage.connect.go")
 	})
@@ -195,7 +195,7 @@ func TestGenerate(t *testing.T) {
 
 			assert.Equal(t, len(rsp.File), 1)
 			file := rsp.File[0]
-			assert.Equal(t, file.GetName(), "agentio/scalpel/cmd/protoc-gen-connect-go/internal/testdata/simple/gen/genconnect/simple.connect.go")
+			assert.Equal(t, file.GetName(), "github.com/agentio/scalpel/cmd/protoc-gen-scalpel-go/internal/testdata/simple/gen/genconnect/simple.connect.go")
 			assert.NotZero(t, file.GetContent())
 			testCmpToTestdata(t, file.GetContent(), "internal/testdata/simple/gen/genconnect/simple.connect.go")
 		}
@@ -248,7 +248,7 @@ func testCmpToTestdata(t *testing.T, content, path string) {
 	fileContent := string(b)
 	if codeGenerateIndex := strings.Index(fileContent, "// Code generated by"); codeGenerateIndex != -1 {
 		fileContent = fileContent[codeGenerateIndex:]
-		fileContent = strings.Replace(fileContent, "Code generated by protoc-gen-connect-go.", "Code generated by main.", 1)
+		fileContent = strings.Replace(fileContent, "Code generated by protoc-gen-scalpel-go.", "Code generated by main.", 1)
 	}
 	if runtime.GOOS == "windows" {
 		fileContent = strings.ReplaceAll(fileContent, "\r\n", "\n")

@@ -24,10 +24,10 @@ import (
 	"strings"
 	"testing"
 
-	connect "agentio/scalpel"
-	"agentio/scalpel/internal/assert"
-	pingv1 "agentio/scalpel/internal/gen/connect/ping/v1"
-	"agentio/scalpel/internal/gen/simple/connect/ping/v1/pingv1connect"
+	connect "github.com/agentio/scalpel"
+	"github.com/agentio/scalpel/internal/assert"
+	pingv1 "github.com/agentio/scalpel/internal/gen/connect/ping/v1"
+	"github.com/agentio/scalpel/internal/gen/simple/connect/ping/v1/pingv1connect"
 )
 
 func BenchmarkConnect(b *testing.B) {

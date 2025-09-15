@@ -20,9 +20,9 @@ import (
 	"net/http"
 	"strconv"
 
-	connect "agentio/scalpel"
-	pingv1 "agentio/scalpel/internal/gen/connect/ping/v1"
-	"agentio/scalpel/internal/gen/simple/connect/ping/v1/pingv1connect"
+	connect "github.com/agentio/scalpel"
+	pingv1 "github.com/agentio/scalpel/internal/gen/connect/ping/v1"
+	"github.com/agentio/scalpel/internal/gen/simple/connect/ping/v1/pingv1connect"
 )
 
 // ExampleCachingServer is an example of how servers can take advantage the

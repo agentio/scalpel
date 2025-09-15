@@ -21,12 +21,11 @@
 package gen
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -117,8 +116,8 @@ const file_diffpackage_proto_rawDesc = "" +
 	"\n" +
 	"\bResponse2l\n" +
 	"\vTestService\x12]\n" +
-	"\x06Method\x12'.connect.test.different_package.Request\x1a(.connect.test.different_package.Response\"\x00B\xa0\x02\n" +
-	"\"com.connect.test.different_packageB\x10DiffpackageProtoP\x01ZRagentio/scalpel/cmd/protoc-gen-connect-go/internal/testdata/diffpackage/gen\xa2\x02\x03CTD\xaa\x02\x1dConnect.Test.DifferentPackage\xca\x02\x1dConnect\\Test\\DifferentPackage\xe2\x02)Connect\\Test\\DifferentPackage\\GPBMetadata\xea\x02\x1fConnect::Test::DifferentPackageb\x06proto3"
+	"\x06Method\x12'.connect.test.different_package.Request\x1a(.connect.test.different_package.Response\"\x00B\xa4\x02\n" +
+	"\"com.connect.test.different_packageB\x10DiffpackageProtoP\x01ZVgithub.com/agentio/scalpel/cmd/protoc-gen-scalpel-go/internal/testdata/diffpackage/gen\xa2\x02\x03CTD\xaa\x02\x1dConnect.Test.DifferentPackage\xca\x02\x1dConnect\\Test\\DifferentPackage\xe2\x02)Connect\\Test\\DifferentPackage\\GPBMetadata\xea\x02\x1fConnect::Test::DifferentPackageb\x06proto3"
 
 var (
 	file_diffpackage_proto_rawDescOnce sync.Once

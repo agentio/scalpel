@@ -17,7 +17,7 @@ package connect
 import (
 	"testing"
 
-	"agentio/scalpel/internal/assert"
+	"github.com/agentio/scalpel/internal/assert"
 )
 
 func TestCanonicalizeContentType(t *testing.T) {

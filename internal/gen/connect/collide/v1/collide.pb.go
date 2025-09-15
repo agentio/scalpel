@@ -21,12 +21,11 @@
 package collidev1
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -116,8 +115,8 @@ const file_connect_collide_v1_collide_proto_rawDesc = "" +
 	"\rImportRequest\"\x10\n" +
 	"\x0eImportResponse2c\n" +
 	"\x0eCollideService\x12Q\n" +
-	"\x06Import\x12!.connect.collide.v1.ImportRequest\x1a\".connect.collide.v1.ImportResponse\"\x00B\xd2\x01\n" +
-	"\x16com.connect.collide.v1B\fCollideProtoP\x01Z@agentio/scalpel/internal/gen/connect/collide/v1;collidev1\xa2\x02\x03CCX\xaa\x02\x12Connect.Collide.V1\xca\x02\x12Connect\\Collide\\V1\xe2\x02\x1eConnect\\Collide\\V1\\GPBMetadata\xea\x02\x14Connect::Collide::V1b\x06proto3"
+	"\x06Import\x12!.connect.collide.v1.ImportRequest\x1a\".connect.collide.v1.ImportResponse\"\x00B\xd6\x01\n" +
+	"\x16com.connect.collide.v1B\fCollideProtoP\x01ZDgithub.com/agentio/scalpel/internal/gen/connect/collide/v1;collidev1\xa2\x02\x03CCX\xaa\x02\x12Connect.Collide.V1\xca\x02\x12Connect\\Collide\\V1\xe2\x02\x1eConnect\\Collide\\V1\\GPBMetadata\xea\x02\x14Connect::Collide::V1b\x06proto3"
 
 var (
 	file_connect_collide_v1_collide_proto_rawDescOnce sync.Once

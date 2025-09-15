@@ -23,13 +23,13 @@ import (
 	"sync/atomic"
 	"testing"
 
-	connect "agentio/scalpel"
-	"agentio/scalpel/internal/assert"
-	pingv1 "agentio/scalpel/internal/gen/connect/ping/v1"
-	"agentio/scalpel/internal/gen/generics/connect/ping/v1/pingv1connect"
-	pingv1connectsimple "agentio/scalpel/internal/gen/simple/connect/ping/v1/pingv1connect"
-	"agentio/scalpel/internal/memhttp"
-	"agentio/scalpel/internal/memhttp/memhttptest"
+	connect "github.com/agentio/scalpel"
+	"github.com/agentio/scalpel/internal/assert"
+	pingv1 "github.com/agentio/scalpel/internal/gen/connect/ping/v1"
+	"github.com/agentio/scalpel/internal/gen/generics/connect/ping/v1/pingv1connect"
+	pingv1connectsimple "github.com/agentio/scalpel/internal/gen/simple/connect/ping/v1/pingv1connect"
+	"github.com/agentio/scalpel/internal/memhttp"
+	"github.com/agentio/scalpel/internal/memhttp/memhttptest"
 )
 
 const expectedContextErrorMessage = "creating a new context in an interceptor is prohibited"

@@ -1,4 +1,4 @@
-module agentio/scalpel
+module github.com/agentio/scalpel
 
 go 1.24.0
 

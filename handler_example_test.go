@@ -20,9 +20,9 @@ import (
 	"io"
 	"net/http"
 
-	connect "agentio/scalpel"
-	pingv1 "agentio/scalpel/internal/gen/connect/ping/v1"
-	"agentio/scalpel/internal/gen/simple/connect/ping/v1/pingv1connect"
+	connect "github.com/agentio/scalpel"
+	pingv1 "github.com/agentio/scalpel/internal/gen/connect/ping/v1"
+	"github.com/agentio/scalpel/internal/gen/simple/connect/ping/v1/pingv1connect"
 )
 
 // ExamplePingServer implements some trivial business logic. The Protobuf

@@ -77,11 +77,11 @@ lintfix: $(BIN)/golangci-lint $(BIN)/buf ## Automatically fix some lint errors
 	buf format -w
 
 .PHONY: generate
-generate: $(BIN)/buf $(BIN)/protoc-gen-go $(BIN)/protoc-gen-connect-go $(BIN)/license-header ## Regenerate code and licenses
+generate: $(BIN)/buf $(BIN)/protoc-gen-go $(BIN)/protoc-gen-scalpel-go $(BIN)/license-header ## Regenerate code and licenses
 	go mod tidy
 	cd ./internal/conformance && go mod tidy
 	buf generate
-	cd ./cmd/protoc-gen-connect-go/internal && \
+	cd ./cmd/protoc-gen-scalpel-go/internal && \
 		find ./testdata -maxdepth 1 -type d \( ! -name testdata \) | xargs -n 1 -I % bash -c "cd '%' && buf generate"
 	license-header \
 		--license-type apache \
@@ -97,10 +97,10 @@ checkgenerate:
 	@# Used in CI to verify that `make generate` doesn't produce a diff.
 	test -z "$$(git status --porcelain | tee /dev/stderr)"
 
-.PHONY: $(BIN)/protoc-gen-connect-go
-$(BIN)/protoc-gen-connect-go:
+.PHONY: $(BIN)/protoc-gen-scalpel-go
+$(BIN)/protoc-gen-scalpel-go:
 	@mkdir -p $(@D)
-	go build -o $(@) ./cmd/protoc-gen-connect-go
+	go build -o $(@) ./cmd/protoc-gen-scalpel-go
 
 $(BIN)/buf: Makefile
 	@mkdir -p $(@D)

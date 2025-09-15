@@ -20,8 +20,8 @@ import (
 	"net/http"
 	"testing"
 
-	"agentio/scalpel/internal/assert"
-	pingv1 "agentio/scalpel/internal/gen/connect/ping/v1"
+	"github.com/agentio/scalpel/internal/assert"
+	pingv1 "github.com/agentio/scalpel/internal/gen/connect/ping/v1"
 )
 
 const expectedStreamErrorMessage = "no stream initialized"

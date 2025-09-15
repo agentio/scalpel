@@ -21,11 +21,10 @@
 package importv1
 
 import (
-	reflect "reflect"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	unsafe "unsafe"
 )
 
 const (
@@ -40,8 +39,8 @@ var File_connect_import_v1_import_proto protoreflect.FileDescriptor
 const file_connect_import_v1_import_proto_rawDesc = "" +
 	"\n" +
 	"\x1econnect/import/v1/import.proto\x12\x11connect.import.v12\x0f\n" +
-	"\rImportServiceB\xca\x01\n" +
-	"\x15com.connect.import.v1B\vImportProtoP\x01Z>agentio/scalpel/internal/gen/connect/import/v1;importv1\xa2\x02\x03CIX\xaa\x02\x11Connect.Import.V1\xca\x02\x11Connect\\Import\\V1\xe2\x02\x1dConnect\\Import\\V1\\GPBMetadata\xea\x02\x13Connect::Import::V1b\x06proto3"
+	"\rImportServiceB\xce\x01\n" +
+	"\x15com.connect.import.v1B\vImportProtoP\x01ZBgithub.com/agentio/scalpel/internal/gen/connect/import/v1;importv1\xa2\x02\x03CIX\xaa\x02\x11Connect.Import.V1\xca\x02\x11Connect\\Import\\V1\xe2\x02\x1dConnect\\Import\\V1\\GPBMetadata\xea\x02\x13Connect::Import::V1b\x06proto3"
 
 var file_connect_import_v1_import_proto_goTypes = []any{}
 var file_connect_import_v1_import_proto_depIdxs = []int32{

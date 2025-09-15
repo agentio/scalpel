@@ -27,7 +27,7 @@
 //	plugins:
 //	  - local: protoc-gen-go
 //	    out: gen
-//	  - local: protoc-gen-connect-go
+//	  - local: protoc-gen-scalpel-go
 //	    out: gen
 //
 // This generates service definitions for the Protobuf types and services
@@ -50,7 +50,7 @@
 //	plugins:
 //	  - local: protoc-gen-go
 //	    out: gen
-//	  - local: protoc-gen-connect-go
+//	  - local: protoc-gen-scalpel-go
 //	    out: gen
 //	    opt: package_suffix
 //
@@ -73,7 +73,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	connect "agentio/scalpel"
+	connect "github.com/agentio/scalpel"
 
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -86,7 +86,7 @@ const (
 	errorsPackage  = protogen.GoImportPath("errors")
 	httpPackage    = protogen.GoImportPath("net/http")
 	stringsPackage = protogen.GoImportPath("strings")
-	connectPackage = protogen.GoImportPath("agentio/scalpel")
+	connectPackage = protogen.GoImportPath("github.com/agentio/scalpel")
 
 	generatedFilenameExtension = ".connect.go"
 	defaultPackageSuffix       = "connect"

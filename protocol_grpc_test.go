@@ -26,7 +26,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"agentio/scalpel/internal/assert"
+	"github.com/agentio/scalpel/internal/assert"
 
 	"github.com/google/go-cmp/cmp"
 )
