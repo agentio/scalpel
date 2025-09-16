@@ -15,42 +15,10 @@
 package scalpel
 
 import (
-	"net/http"
 	"testing"
 
 	"github.com/agentio/scalpel/internal/assert"
-	"github.com/agentio/scalpel/internal/memhttp/memhttptest"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
-
-func TestAcceptEncodingOrdering(t *testing.T) {
-	t.Parallel()
-	const (
-		compressionBrotli = "br"
-		expect            = compressionGzip + "," + compressionBrotli
-	)
-
-	withFakeBrotli, ok := withGzip().(*compressionOption)
-	assert.True(t, ok)
-	withFakeBrotli.Name = compressionBrotli
-
-	var called bool
-	verify := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		got := r.Header.Get(connectUnaryHeaderAcceptCompression)
-		assert.Equal(t, got, expect)
-		w.WriteHeader(http.StatusOK)
-		called = true
-	})
-	server := memhttptest.NewServer(t, verify)
-	client := NewClient[emptypb.Empty, emptypb.Empty](
-		server.Client(),
-		server.URL(),
-		withFakeBrotli,
-		withGzip(),
-	)
-	_, _ = client.CallUnary(t.Context(), NewRequest(&emptypb.Empty{}))
-	assert.True(t, called)
-}
 
 func TestClientCompressionOptionTest(t *testing.T) {
 	t.Parallel()

@@ -24,7 +24,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"math"
 	rand "math/rand/v2"
 	"net"
@@ -657,29 +656,6 @@ func TestServer(t *testing.T) {
 			testCumSum(t, client, bidi)
 			testErrors(t, client)
 		}
-		t.Run("connect", func(t *testing.T) {
-			t.Run("proto", func(t *testing.T) {
-				run(t)
-			})
-			t.Run("proto_gzip", func(t *testing.T) {
-				run(t, connect.WithSendGzip())
-			})
-			t.Run("json_gzip", func(t *testing.T) {
-				run(
-					t,
-					connect.WithProtoJSON(),
-					connect.WithSendGzip(),
-				)
-			})
-			t.Run("json_get", func(t *testing.T) {
-				run(
-					t,
-					connect.WithProtoJSON(),
-					connect.WithHTTPGet(),
-					connect.WithHTTPGetMaxURLSize(1024, true),
-				)
-			})
-		})
 		t.Run("grpc", func(t *testing.T) {
 			t.Run("proto", func(t *testing.T) {
 				run(t, connect.WithGRPC())
@@ -691,22 +667,6 @@ func TestServer(t *testing.T) {
 				run(
 					t,
 					connect.WithGRPC(),
-					connect.WithProtoJSON(),
-					connect.WithSendGzip(),
-				)
-			})
-		})
-		t.Run("grpcweb", func(t *testing.T) {
-			t.Run("proto", func(t *testing.T) {
-				run(t, connect.WithGRPCWeb())
-			})
-			t.Run("proto_gzip", func(t *testing.T) {
-				run(t, connect.WithGRPCWeb(), connect.WithSendGzip())
-			})
-			t.Run("json_gzip", func(t *testing.T) {
-				run(
-					t,
-					connect.WithGRPCWeb(),
 					connect.WithProtoJSON(),
 					connect.WithSendGzip(),
 				)
@@ -931,19 +891,9 @@ func TestErrorHeaderPropagation(t *testing.T) {
 			})
 		})
 	}
-	t.Run("connect", func(t *testing.T) {
-		t.Parallel()
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL())
-		testServices(t, client)
-	})
 	t.Run("grpc", func(t *testing.T) {
 		t.Parallel()
 		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPC())
-		testServices(t, client)
-	})
-	t.Run("grpc-web", func(t *testing.T) {
-		t.Parallel()
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPCWeb())
 		testServices(t, client)
 	})
 }
@@ -1009,24 +959,10 @@ func TestHeaderHost(t *testing.T) {
 		assert.Equal(t, response.Header().Get(key), "")
 	}
 
-	t.Run("connect", func(t *testing.T) {
-		t.Parallel()
-		server := newHTTP2Server(t)
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL())
-		callWithHost(t, client)
-	})
-
 	t.Run("grpc", func(t *testing.T) {
 		t.Parallel()
 		server := newHTTP2Server(t)
 		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPC())
-		callWithHost(t, client)
-	})
-
-	t.Run("grpc-web", func(t *testing.T) {
-		t.Parallel()
-		server := newHTTP2Server(t)
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPCWeb())
 		callWithHost(t, client)
 	})
 }
@@ -1089,44 +1025,6 @@ func TestContextError(t *testing.T) {
 	assert.True(t, errors.As(err, &connectErr))
 	assert.Equal(t, connectErr.Code(), connect.CodeCanceled)
 	assert.False(t, connect.IsWireError(err))
-}
-
-func TestGRPCMarshalStatusError(t *testing.T) {
-	t.Parallel()
-
-	mux := http.NewServeMux()
-	mux.Handle(pingv1connect.NewPingServiceHandler(
-		pingServer{
-			// Include error details in the response, so that the Status protobuf will be marshaled.
-			includeErrorDetails: true,
-		},
-		// We're using a codec that will fail to marshal the Status protobuf, which means the returned error will be ignored
-		connect.WithCodec(failCodec{}),
-	))
-	server := memhttptest.NewServer(t, mux)
-
-	assertInternalError := func(tb testing.TB, opts ...connect.ClientOption) {
-		tb.Helper()
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), opts...)
-		request := connect.NewRequest(&pingv1.FailRequest{Code: int32(connect.CodeResourceExhausted)})
-		_, err := client.Fail(t.Context(), request)
-		tb.Log(err)
-		assert.NotNil(t, err, assert.Sprintf("expected an error"))
-		var connectErr *connect.Error
-		ok := errors.As(err, &connectErr)
-		assert.True(t, ok, assert.Sprintf("expected the error to be a connect.Error"))
-		// This should be Internal, not ResourceExhausted, because we're testing when the Status object itself fails to marshal
-		assert.Equal(t, connectErr.Code(), connect.CodeInternal, assert.Sprintf("expected the error code to be Internal, was %s", connectErr.Code()))
-		assert.True(
-			t,
-			strings.HasSuffix(connectErr.Message(), ": boom"),
-		)
-	}
-
-	// Only applies to gRPC protocols, where we're marshaling the Status protobuf
-	// message to binary.
-	assertInternalError(t, connect.WithGRPC())
-	assertInternalError(t, connect.WithGRPCWeb())
 }
 
 func TestGRPCMissingTrailersError(t *testing.T) {
@@ -1220,72 +1118,6 @@ func TestUnavailableIfHostInvalid(t *testing.T) {
 	assert.Equal(t, connect.CodeOf(err), connect.CodeUnavailable)
 }
 
-func TestBidiRequiresHTTP2(t *testing.T) {
-	t.Parallel()
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/connect+proto")
-		_, err := io.WriteString(w, "hello world")
-		assert.Nil(t, err)
-	})
-	server := memhttptest.NewServer(t, handler)
-	client := pingv1connect.NewPingServiceClient(
-		&http.Client{Transport: server.TransportHTTP1()},
-		server.URL(),
-	)
-	stream := client.CumSum(t.Context())
-	// Stream creates an async request, can error on Send or Receive.
-	if err := stream.Send(&pingv1.CumSumRequest{}); err != nil {
-		assert.ErrorIs(t, err, io.EOF)
-	}
-	assert.Nil(t, stream.CloseRequest())
-	_, err := stream.Receive()
-	assert.NotNil(t, err)
-	var connectErr *connect.Error
-	assert.True(t, errors.As(err, &connectErr))
-	assert.Equal(t, connectErr.Code(), connect.CodeUnimplemented)
-	assert.True(
-		t,
-		strings.HasSuffix(connectErr.Message(), ": bidi streams require at least HTTP/2"),
-	)
-}
-
-func TestCompressMinBytesClient(t *testing.T) {
-	t.Parallel()
-	assertContentType := func(tb testing.TB, text, expect string) {
-		tb.Helper()
-		mux := http.NewServeMux()
-		mux.Handle("/", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			writer.Header().Set("Content-Type", "application/proto")
-			assert.Equal(tb, request.Header.Get("Content-Encoding"), expect)
-		}))
-		server := memhttptest.NewServer(t, mux)
-		_, err := pingv1connect.NewPingServiceClient(
-			server.Client(),
-			server.URL(),
-			connect.WithSendGzip(),
-			connect.WithCompressMinBytes(8),
-		).Ping(t.Context(), connect.NewRequest(&pingv1.PingRequest{Text: text}))
-		assert.Nil(tb, err)
-	}
-	t.Run("request_uncompressed", func(t *testing.T) {
-		t.Parallel()
-		assertContentType(t, "ping", "")
-	})
-	t.Run("request_compressed", func(t *testing.T) {
-		t.Parallel()
-		assertContentType(t, "pingping", "gzip")
-	})
-
-	t.Run("request_uncompressed", func(t *testing.T) {
-		t.Parallel()
-		assertContentType(t, "ping", "")
-	})
-	t.Run("request_compressed", func(t *testing.T) {
-		t.Parallel()
-		assertContentType(t, strings.Repeat("ping", 2), "gzip")
-	})
-}
-
 func TestCompressMinBytes(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
@@ -1320,11 +1152,6 @@ func TestCompressMinBytes(t *testing.T) {
 	t.Run("response_uncompressed", func(t *testing.T) {
 		t.Parallel()
 		assert.False(t, getPingResponse(t, "ping").Uncompressed) //nolint:bodyclose
-	})
-
-	t.Run("response_compressed", func(t *testing.T) {
-		t.Parallel()
-		assert.True(t, getPingResponse(t, strings.Repeat("ping", 2)).Uncompressed) //nolint:bodyclose
 	})
 }
 
@@ -1377,39 +1204,6 @@ func TestClientWithoutGzipSupport(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, connect.CodeOf(err), connect.CodeUnknown)
 	assert.True(t, strings.Contains(err.Error(), "unknown compression"))
-}
-
-func TestInvalidHeaderTimeout(t *testing.T) {
-	t.Parallel()
-	mux := http.NewServeMux()
-	mux.Handle(pingv1connect.NewPingServiceHandler(pingServer{}))
-	server := memhttptest.NewServer(t, mux)
-	getPingResponseWithTimeout := func(t *testing.T, timeout string) *http.Response {
-		t.Helper()
-		request, err := http.NewRequestWithContext(
-			t.Context(),
-			http.MethodPost,
-			server.URL()+pingv1connect.PingServicePingProcedure,
-			strings.NewReader("{}"),
-		)
-		assert.Nil(t, err)
-		request.Header.Set("Content-Type", "application/json")
-		request.Header.Set("Connect-Timeout-Ms", timeout)
-		response, err := server.Client().Do(request)
-		assert.Nil(t, err)
-		t.Cleanup(func() {
-			assert.Nil(t, response.Body.Close())
-		})
-		return response
-	}
-	t.Run("timeout_non_numeric", func(t *testing.T) {
-		t.Parallel()
-		assert.Equal(t, getPingResponseWithTimeout(t, "10s").StatusCode, http.StatusBadRequest) //nolint:bodyclose
-	})
-	t.Run("timeout_out_of_range", func(t *testing.T) {
-		t.Parallel()
-		assert.Equal(t, getPingResponseWithTimeout(t, "12345678901").StatusCode, http.StatusBadRequest) //nolint:bodyclose
-	})
 }
 
 func TestInterceptorReturnsWrongType(t *testing.T) {
@@ -1497,18 +1291,6 @@ func TestHandlerWithReadMaxBytes(t *testing.T) {
 		server := memhttptest.NewServer(t, mux)
 		return server
 	}
-	t.Run("connect", func(t *testing.T) {
-		t.Parallel()
-		server := newHTTP2Server(t)
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL())
-		readMaxBytesMatrix(t, client, false)
-	})
-	t.Run("connect_gzip", func(t *testing.T) {
-		t.Parallel()
-		server := newHTTP2Server(t)
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithSendGzip())
-		readMaxBytesMatrix(t, client, true)
-	})
 	t.Run("grpc", func(t *testing.T) {
 		t.Parallel()
 		server := newHTTP2Server(t)
@@ -1519,18 +1301,6 @@ func TestHandlerWithReadMaxBytes(t *testing.T) {
 		t.Parallel()
 		server := newHTTP2Server(t)
 		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPC(), connect.WithSendGzip())
-		readMaxBytesMatrix(t, client, true)
-	})
-	t.Run("grpcweb", func(t *testing.T) {
-		t.Parallel()
-		server := newHTTP2Server(t)
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPCWeb())
-		readMaxBytesMatrix(t, client, false)
-	})
-	t.Run("grpcweb_gzip", func(t *testing.T) {
-		t.Parallel()
-		server := newHTTP2Server(t)
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPCWeb(), connect.WithSendGzip())
 		readMaxBytesMatrix(t, client, true)
 	})
 }
@@ -1578,18 +1348,6 @@ func TestHandlerWithHTTPMaxBytes(t *testing.T) {
 			assert.Equal(t, connect.CodeOf(err), connect.CodeResourceExhausted)
 		})
 	}
-	t.Run("connect", func(t *testing.T) {
-		t.Parallel()
-		server := memhttptest.NewServer(t, mux)
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL())
-		run(t, client, false)
-	})
-	t.Run("connect_gzip", func(t *testing.T) {
-		t.Parallel()
-		server := memhttptest.NewServer(t, mux)
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithSendGzip())
-		run(t, client, true)
-	})
 	t.Run("grpc", func(t *testing.T) {
 		t.Parallel()
 		server := memhttptest.NewServer(t, mux)
@@ -1600,18 +1358,6 @@ func TestHandlerWithHTTPMaxBytes(t *testing.T) {
 		t.Parallel()
 		server := memhttptest.NewServer(t, mux)
 		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPC(), connect.WithSendGzip())
-		run(t, client, true)
-	})
-	t.Run("grpcweb", func(t *testing.T) {
-		t.Parallel()
-		server := memhttptest.NewServer(t, mux)
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPCWeb())
-		run(t, client, false)
-	})
-	t.Run("grpcweb_gzip", func(t *testing.T) {
-		t.Parallel()
-		server := memhttptest.NewServer(t, mux)
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPCWeb(), connect.WithSendGzip())
 		run(t, client, true)
 	})
 }
@@ -1674,16 +1420,6 @@ func TestClientWithReadMaxBytes(t *testing.T) {
 			assert.Equal(t, err.Error(), fmt.Sprintf("resource_exhausted: message size %d is larger than configured max %d", expectedSize, readMaxBytes))
 		})
 	}
-	t.Run("connect", func(t *testing.T) {
-		t.Parallel()
-		client := pingv1connect.NewPingServiceClient(serverUncompressed.Client(), serverUncompressed.URL(), connect.WithReadMaxBytes(readMaxBytes))
-		readMaxBytesMatrix(t, client, false)
-	})
-	t.Run("connect_gzip", func(t *testing.T) {
-		t.Parallel()
-		client := pingv1connect.NewPingServiceClient(serverCompressed.Client(), serverCompressed.URL(), connect.WithReadMaxBytes(readMaxBytes))
-		readMaxBytesMatrix(t, client, true)
-	})
 	t.Run("grpc", func(t *testing.T) {
 		t.Parallel()
 		client := pingv1connect.NewPingServiceClient(serverUncompressed.Client(), serverUncompressed.URL(), connect.WithReadMaxBytes(readMaxBytes), connect.WithGRPC())
@@ -1692,16 +1428,6 @@ func TestClientWithReadMaxBytes(t *testing.T) {
 	t.Run("grpc_gzip", func(t *testing.T) {
 		t.Parallel()
 		client := pingv1connect.NewPingServiceClient(serverCompressed.Client(), serverCompressed.URL(), connect.WithReadMaxBytes(readMaxBytes), connect.WithGRPC())
-		readMaxBytesMatrix(t, client, true)
-	})
-	t.Run("grpcweb", func(t *testing.T) {
-		t.Parallel()
-		client := pingv1connect.NewPingServiceClient(serverUncompressed.Client(), serverUncompressed.URL(), connect.WithReadMaxBytes(readMaxBytes), connect.WithGRPCWeb())
-		readMaxBytesMatrix(t, client, false)
-	})
-	t.Run("grpcweb_gzip", func(t *testing.T) {
-		t.Parallel()
-		client := pingv1connect.NewPingServiceClient(serverCompressed.Client(), serverCompressed.URL(), connect.WithReadMaxBytes(readMaxBytes), connect.WithGRPCWeb())
 		readMaxBytesMatrix(t, client, true)
 	})
 }
@@ -1776,18 +1502,6 @@ func TestHandlerWithSendMaxBytes(t *testing.T) {
 		server := memhttptest.NewServer(t, mux)
 		return server
 	}
-	t.Run("connect", func(t *testing.T) {
-		t.Parallel()
-		server := newHTTP2Server(t, false, sendMaxBytes)
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL())
-		sendMaxBytesMatrix(t, client, false)
-	})
-	t.Run("connect_gzip", func(t *testing.T) {
-		t.Parallel()
-		server := newHTTP2Server(t, true, sendMaxBytes)
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL())
-		sendMaxBytesMatrix(t, client, true)
-	})
 	t.Run("grpc", func(t *testing.T) {
 		t.Parallel()
 		server := newHTTP2Server(t, false, sendMaxBytes)
@@ -1798,18 +1512,6 @@ func TestHandlerWithSendMaxBytes(t *testing.T) {
 		t.Parallel()
 		server := newHTTP2Server(t, true, sendMaxBytes)
 		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPC())
-		sendMaxBytesMatrix(t, client, true)
-	})
-	t.Run("grpcweb", func(t *testing.T) {
-		t.Parallel()
-		server := newHTTP2Server(t, false, sendMaxBytes)
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPCWeb())
-		sendMaxBytesMatrix(t, client, false)
-	})
-	t.Run("grpcweb_gzip", func(t *testing.T) {
-		t.Parallel()
-		server := newHTTP2Server(t, true, sendMaxBytes)
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPCWeb())
 		sendMaxBytesMatrix(t, client, true)
 	})
 }
@@ -1867,18 +1569,6 @@ func TestClientWithSendMaxBytes(t *testing.T) {
 			}
 		})
 	}
-	t.Run("connect", func(t *testing.T) {
-		t.Parallel()
-		sendMaxBytes := 1024
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithSendMaxBytes(sendMaxBytes))
-		sendMaxBytesMatrix(t, client, sendMaxBytes, false)
-	})
-	t.Run("connect_gzip", func(t *testing.T) {
-		t.Parallel()
-		sendMaxBytes := 1024
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithSendMaxBytes(sendMaxBytes), connect.WithSendGzip())
-		sendMaxBytesMatrix(t, client, sendMaxBytes, true)
-	})
 	t.Run("grpc", func(t *testing.T) {
 		t.Parallel()
 		sendMaxBytes := 1024
@@ -1889,18 +1579,6 @@ func TestClientWithSendMaxBytes(t *testing.T) {
 		t.Parallel()
 		sendMaxBytes := 1024
 		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithSendMaxBytes(sendMaxBytes), connect.WithGRPC(), connect.WithSendGzip())
-		sendMaxBytesMatrix(t, client, sendMaxBytes, true)
-	})
-	t.Run("grpcweb", func(t *testing.T) {
-		t.Parallel()
-		sendMaxBytes := 1024
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithSendMaxBytes(sendMaxBytes), connect.WithGRPCWeb())
-		sendMaxBytesMatrix(t, client, sendMaxBytes, false)
-	})
-	t.Run("grpcweb_gzip", func(t *testing.T) {
-		t.Parallel()
-		sendMaxBytes := 1024
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithSendMaxBytes(sendMaxBytes), connect.WithGRPCWeb(), connect.WithSendGzip())
 		sendMaxBytesMatrix(t, client, sendMaxBytes, true)
 	})
 }
@@ -1937,17 +1615,9 @@ func TestBidiStreamServerSendsFirstMessage(t *testing.T) {
 		case <-headersSent:
 		}
 	}
-	t.Run("connect", func(t *testing.T) {
-		t.Parallel()
-		run(t)
-	})
 	t.Run("grpc", func(t *testing.T) {
 		t.Parallel()
 		run(t, connect.WithGRPC())
-	})
-	t.Run("grpcweb", func(t *testing.T) {
-		t.Parallel()
-		run(t, connect.WithGRPCWeb())
 	})
 }
 
@@ -2114,109 +1784,6 @@ func TestStreamForServer(t *testing.T) {
 	})
 }
 
-func TestConnectHTTPErrorCodes(t *testing.T) {
-	t.Parallel()
-	checkHTTPStatus := func(t *testing.T, connectCode connect.Code, wantHttpStatus int) {
-		t.Helper()
-		mux := http.NewServeMux()
-		pluggableServer := &pluggablePingServer{
-			ping: func(_ context.Context, _ *connect.Request[pingv1.PingRequest]) (*connect.Response[pingv1.PingResponse], error) {
-				return nil, connect.NewError(connectCode, errors.New("error"))
-			},
-		}
-		mux.Handle(pingv1connect.NewPingServiceHandler(pluggableServer))
-		server := memhttptest.NewServer(t, mux)
-		req, err := http.NewRequestWithContext(
-			t.Context(),
-			http.MethodPost,
-			server.URL()+pingv1connect.PingServicePingProcedure,
-			strings.NewReader("{}"),
-		)
-		assert.Nil(t, err)
-		req.Header.Set("Content-Type", "application/json")
-		resp, err := server.Client().Do(req)
-		assert.Nil(t, err)
-		defer resp.Body.Close()
-		assert.Equal(t, wantHttpStatus, resp.StatusCode)
-		connectClient := pingv1connect.NewPingServiceClient(server.Client(), server.URL())
-		connectResp, err := connectClient.Ping(t.Context(), connect.NewRequest(&pingv1.PingRequest{}))
-		assert.NotNil(t, err)
-		assert.Nil(t, connectResp)
-	}
-	t.Run("CodeCanceled-499", func(t *testing.T) {
-		t.Parallel()
-		checkHTTPStatus(t, connect.CodeCanceled, 499)
-	})
-	t.Run("CodeUnknown-500", func(t *testing.T) {
-		t.Parallel()
-		checkHTTPStatus(t, connect.CodeUnknown, 500)
-	})
-	t.Run("CodeInvalidArgument-400", func(t *testing.T) {
-		t.Parallel()
-		checkHTTPStatus(t, connect.CodeInvalidArgument, 400)
-	})
-	t.Run("CodeDeadlineExceeded-504", func(t *testing.T) {
-		t.Parallel()
-		checkHTTPStatus(t, connect.CodeDeadlineExceeded, 504)
-	})
-	t.Run("CodeNotFound-404", func(t *testing.T) {
-		t.Parallel()
-		checkHTTPStatus(t, connect.CodeNotFound, 404)
-	})
-	t.Run("CodeAlreadyExists-409", func(t *testing.T) {
-		t.Parallel()
-		checkHTTPStatus(t, connect.CodeAlreadyExists, 409)
-	})
-	t.Run("CodePermissionDenied-403", func(t *testing.T) {
-		t.Parallel()
-		checkHTTPStatus(t, connect.CodePermissionDenied, 403)
-	})
-	t.Run("CodeResourceExhausted-429", func(t *testing.T) {
-		t.Parallel()
-		checkHTTPStatus(t, connect.CodeResourceExhausted, 429)
-	})
-	t.Run("CodeFailedPrecondition-400", func(t *testing.T) {
-		t.Parallel()
-		checkHTTPStatus(t, connect.CodeFailedPrecondition, 400)
-	})
-	t.Run("CodeAborted-409", func(t *testing.T) {
-		t.Parallel()
-		checkHTTPStatus(t, connect.CodeAborted, 409)
-	})
-	t.Run("CodeOutOfRange-400", func(t *testing.T) {
-		t.Parallel()
-		checkHTTPStatus(t, connect.CodeOutOfRange, 400)
-	})
-	t.Run("CodeUnimplemented-501", func(t *testing.T) {
-		t.Parallel()
-		checkHTTPStatus(t, connect.CodeUnimplemented, 501)
-	})
-	t.Run("CodeInternal-500", func(t *testing.T) {
-		t.Parallel()
-		checkHTTPStatus(t, connect.CodeInternal, 500)
-	})
-	t.Run("CodeUnavailable-503", func(t *testing.T) {
-		t.Parallel()
-		checkHTTPStatus(t, connect.CodeUnavailable, 503)
-	})
-	t.Run("CodeDataLoss-500", func(t *testing.T) {
-		t.Parallel()
-		checkHTTPStatus(t, connect.CodeDataLoss, 500)
-	})
-	t.Run("CodeUnauthenticated-401", func(t *testing.T) {
-		t.Parallel()
-		checkHTTPStatus(t, connect.CodeUnauthenticated, 401)
-	})
-	t.Run("100-500", func(t *testing.T) {
-		t.Parallel()
-		checkHTTPStatus(t, 100, 500)
-	})
-	t.Run("0-500", func(t *testing.T) {
-		t.Parallel()
-		checkHTTPStatus(t, 0, 500)
-	})
-}
-
 func TestFailCompression(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
@@ -2272,9 +1839,7 @@ func TestUnflushableResponseWriter(t *testing.T) {
 		name    string
 		options []connect.ClientOption
 	}{
-		{"connect", nil},
 		{"grpc", []connect.ClientOption{connect.WithGRPC()}},
-		{"grpcweb", []connect.ClientOption{connect.WithGRPCWeb()}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -2353,38 +1918,6 @@ func TestConnectProtocolHeaderSentByDefault(t *testing.T) {
 	assert.Nil(t, stream.CloseResponse())
 }
 
-func TestConnectProtocolHeaderRequired(t *testing.T) {
-	t.Parallel()
-	mux := http.NewServeMux()
-	mux.Handle(pingv1connect.NewPingServiceHandler(
-		pingServer{},
-		connect.WithRequireConnectProtocolHeader(),
-	))
-	server := memhttptest.NewServer(t, mux)
-
-	tests := []struct {
-		headers http.Header
-	}{
-		{http.Header{}},
-		{http.Header{"Connect-Protocol-Version": []string{"0"}}},
-	}
-	for _, tcase := range tests {
-		req, err := http.NewRequestWithContext(
-			t.Context(),
-			http.MethodPost,
-			server.URL()+pingv1connect.PingServicePingProcedure,
-			strings.NewReader("{}"),
-		)
-		assert.Nil(t, err)
-		req.Header.Set("Content-Type", "application/json")
-		maps.Copy(req.Header, tcase.headers)
-		response, err := server.Client().Do(req)
-		assert.Nil(t, err)
-		assert.Nil(t, response.Body.Close())
-		assert.Equal(t, response.StatusCode, http.StatusBadRequest)
-	}
-}
-
 func TestAllowCustomUserAgent(t *testing.T) {
 	t.Parallel()
 
@@ -2404,9 +1937,7 @@ func TestAllowCustomUserAgent(t *testing.T) {
 		protocol string
 		opts     []connect.ClientOption
 	}{
-		{"connect", nil},
 		{"grpc", []connect.ClientOption{connect.WithGRPC()}},
-		{"grpcweb", []connect.ClientOption{connect.WithGRPCWeb()}},
 	}
 	for _, testCase := range tests {
 		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), testCase.opts...)
@@ -2415,30 +1946,6 @@ func TestAllowCustomUserAgent(t *testing.T) {
 		_, err := client.Ping(t.Context(), req)
 		assert.Nil(t, err)
 	}
-}
-
-func TestWebXUserAgent(t *testing.T) {
-	t.Parallel()
-
-	mux := http.NewServeMux()
-	mux.Handle(pingv1connect.NewPingServiceHandler(&pluggablePingServer{
-		ping: func(_ context.Context, req *connect.Request[pingv1.PingRequest]) (*connect.Response[pingv1.PingResponse], error) {
-			agent := req.Header().Get("User-Agent")
-			assert.NotZero(t, agent)
-			assert.Equal(
-				t,
-				req.Header().Get("X-User-Agent"),
-				agent,
-			)
-			return connect.NewResponse(&pingv1.PingResponse{Number: req.Msg.GetNumber()}), nil
-		},
-	}))
-	server := memhttptest.NewServer(t, mux)
-
-	client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPCWeb())
-	req := connect.NewRequest(&pingv1.PingRequest{Number: 42})
-	_, err := client.Ping(t.Context(), req)
-	assert.Nil(t, err)
 }
 
 func TestBidiOverHTTP1(t *testing.T) {
@@ -2536,19 +2043,6 @@ func TestStreamUnexpectedEOF(t *testing.T) {
 		expectCode connect.Code
 		expectMsg  string
 	}{{
-		name:    "connect_missing_end",
-		options: []connect.ClientOption{connect.WithProtoJSON()},
-		handler: func(responseWriter http.ResponseWriter, _ *http.Request) {
-			header := responseWriter.Header()
-			header.Set("Content-Type", "application/connect+json")
-			_, err := responseWriter.Write(head[:])
-			assert.Nil(t, err)
-			_, err = responseWriter.Write(payload)
-			assert.Nil(t, err)
-		},
-		expectCode: connect.CodeInternal,
-		expectMsg:  "internal: protocol error: unexpected EOF",
-	}, {
 		name:    "grpc_missing_end",
 		options: []connect.ClientOption{connect.WithProtoJSON(), connect.WithGRPC()},
 		handler: func(responseWriter http.ResponseWriter, _ *http.Request) {
@@ -2577,55 +2071,6 @@ func TestStreamUnexpectedEOF(t *testing.T) {
 		expectCode: connect.CodeUnknown,
 		expectMsg:  "unknown: protocol error: no Grpc-Status trailer: unexpected EOF",
 	}, {
-		name:    "grpc-web_missing_end",
-		options: []connect.ClientOption{connect.WithProtoJSON(), connect.WithGRPCWeb()},
-		handler: func(responseWriter http.ResponseWriter, _ *http.Request) {
-			header := responseWriter.Header()
-			header.Set("Content-Type", "application/grpc-web+json")
-			_, err := responseWriter.Write(head[:])
-			assert.Nil(t, err)
-			_, _ = responseWriter.Write(payload)
-			assert.Nil(t, err)
-		},
-		expectCode: connect.CodeInternal,
-		expectMsg:  "internal: protocol error: no Grpc-Status trailer: unexpected EOF",
-	}, {
-		name:    "grpc-web_missing_status",
-		options: []connect.ClientOption{connect.WithProtoJSON(), connect.WithGRPCWeb()},
-		handler: func(responseWriter http.ResponseWriter, _ *http.Request) {
-			header := responseWriter.Header()
-			header.Set("Content-Type", "application/grpc-web+json")
-			_, err := responseWriter.Write(head[:])
-			assert.Nil(t, err)
-			_, err = responseWriter.Write(payload)
-			assert.Nil(t, err)
-			// Trailers exist, just no status. So error will be unknown instead of internal.
-			_, err = responseWriter.Write([]byte{128}) // end-stream flag
-			assert.Nil(t, err)
-			endStream := "grpc-message: foo\r\n"
-			var length [4]byte
-			binary.BigEndian.PutUint32(length[:], uint32(len(endStream)))
-			_, err = responseWriter.Write(length[:])
-			assert.Nil(t, err)
-			_, err = responseWriter.Write([]byte(endStream))
-			assert.Nil(t, err)
-		},
-		expectCode: connect.CodeUnknown,
-		expectMsg:  "unknown: protocol error: no Grpc-Status trailer: unexpected EOF",
-	}, {
-		name:    "connect_partial_payload",
-		options: []connect.ClientOption{connect.WithProtoJSON()},
-		handler: func(responseWriter http.ResponseWriter, _ *http.Request) {
-			header := responseWriter.Header()
-			header.Set("Content-Type", "application/connect+json")
-			_, err := responseWriter.Write(head[:])
-			assert.Nil(t, err)
-			_, err = responseWriter.Write(payload[:len(payload)-1])
-			assert.Nil(t, err)
-		},
-		expectCode: connect.CodeInvalidArgument,
-		expectMsg:  fmt.Sprintf("invalid_argument: protocol error: promised %d bytes in enveloped message, got %d bytes", len(payload), len(payload)-1),
-	}, {
 		name:    "grpc_partial_payload",
 		options: []connect.ClientOption{connect.WithProtoJSON(), connect.WithGRPC()},
 		handler: func(responseWriter http.ResponseWriter, _ *http.Request) {
@@ -2639,30 +2084,6 @@ func TestStreamUnexpectedEOF(t *testing.T) {
 		expectCode: connect.CodeInvalidArgument,
 		expectMsg:  fmt.Sprintf("invalid_argument: protocol error: promised %d bytes in enveloped message, got %d bytes", len(payload), len(payload)-1),
 	}, {
-		name:    "grpc-web_partial_payload",
-		options: []connect.ClientOption{connect.WithProtoJSON(), connect.WithGRPCWeb()},
-		handler: func(responseWriter http.ResponseWriter, _ *http.Request) {
-			header := responseWriter.Header()
-			header.Set("Content-Type", "application/grpc-web+json")
-			_, err := responseWriter.Write(head[:])
-			assert.Nil(t, err)
-			_, err = responseWriter.Write(payload[:len(payload)-1])
-			assert.Nil(t, err)
-		},
-		expectCode: connect.CodeInvalidArgument,
-		expectMsg:  fmt.Sprintf("invalid_argument: protocol error: promised %d bytes in enveloped message, got %d bytes", len(payload), len(payload)-1),
-	}, {
-		name:    "connect_partial_frame",
-		options: []connect.ClientOption{connect.WithProtoJSON()},
-		handler: func(responseWriter http.ResponseWriter, _ *http.Request) {
-			header := responseWriter.Header()
-			header.Set("Content-Type", "application/connect+json")
-			_, err := responseWriter.Write(head[:4])
-			assert.Nil(t, err)
-		},
-		expectCode: connect.CodeInvalidArgument,
-		expectMsg:  "invalid_argument: protocol error: incomplete envelope: unexpected EOF",
-	}, {
 		name:    "grpc_partial_frame",
 		options: []connect.ClientOption{connect.WithProtoJSON(), connect.WithGRPC()},
 		handler: func(responseWriter http.ResponseWriter, _ *http.Request) {
@@ -2673,67 +2094,6 @@ func TestStreamUnexpectedEOF(t *testing.T) {
 		},
 		expectCode: connect.CodeInvalidArgument,
 		expectMsg:  "invalid_argument: protocol error: incomplete envelope: unexpected EOF",
-	}, {
-		name:    "grpc-web_partial_frame",
-		options: []connect.ClientOption{connect.WithProtoJSON(), connect.WithGRPCWeb()},
-		handler: func(responseWriter http.ResponseWriter, _ *http.Request) {
-			header := responseWriter.Header()
-			header.Set("Content-Type", "application/grpc-web+json")
-			_, err := responseWriter.Write(head[:4])
-			assert.Nil(t, err)
-		},
-		expectCode: connect.CodeInvalidArgument,
-		expectMsg:  "invalid_argument: protocol error: incomplete envelope: unexpected EOF",
-	}, {
-		name:    "connect_excess_eof",
-		options: []connect.ClientOption{connect.WithProtoJSON()},
-		handler: func(responseWriter http.ResponseWriter, _ *http.Request) {
-			responseWriter.Header().Set("Content-Type", "application/connect+json")
-			_, err := responseWriter.Write(head[:])
-			assert.Nil(t, err)
-			_, err = responseWriter.Write(payload)
-			assert.Nil(t, err)
-			// Write EOF
-			_, err = responseWriter.Write([]byte{1 << 1, 0, 0, 0, 2})
-			assert.Nil(t, err)
-			_, err = responseWriter.Write([]byte("{}"))
-			assert.Nil(t, err)
-			// Excess payload
-			_, err = responseWriter.Write(head[:])
-			assert.Nil(t, err)
-			_, err = responseWriter.Write(payload)
-			assert.Nil(t, err)
-		},
-		expectCode: connect.CodeInternal,
-		expectMsg:  fmt.Sprintf("internal: corrupt response: %d extra bytes after end of stream", len(payload)+len(head)),
-	}, {
-		name:    "grpc-web_excess_eof",
-		options: []connect.ClientOption{connect.WithProtoJSON(), connect.WithGRPCWeb()},
-		handler: func(responseWriter http.ResponseWriter, _ *http.Request) {
-			responseWriter.Header().Set("Content-Type", "application/grpc-web+json")
-			_, err := responseWriter.Write(head[:])
-			assert.Nil(t, err)
-			_, err = responseWriter.Write(payload)
-			assert.Nil(t, err)
-			// Write EOF
-			var buf bytes.Buffer
-			trailer := http.Header{"grpc-status": []string{"0"}}
-			assert.Nil(t, trailer.Write(&buf))
-			var head [5]byte
-			head[0] = 1 << 7
-			binary.BigEndian.PutUint32(head[1:], uint32(buf.Len()))
-			_, err = responseWriter.Write(head[:])
-			assert.Nil(t, err)
-			_, err = responseWriter.Write(buf.Bytes())
-			assert.Nil(t, err)
-			// Excess payload
-			_, err = responseWriter.Write(head[:])
-			assert.Nil(t, err)
-			_, err = responseWriter.Write(payload)
-			assert.Nil(t, err)
-		},
-		expectCode: connect.CodeInternal,
-		expectMsg:  fmt.Sprintf("internal: corrupt response: %d extra bytes after end of stream", len(payload)+len(head)),
 	}}
 	for _, testcase := range testcases {
 		testcaseMux[t.Name()+"/"+testcase.name] = testcase.handler
@@ -2913,16 +2273,9 @@ func TestSetProtocolHeaders(t *testing.T) {
 		clientOption      connect.ClientOption
 		expectContentType string
 	}{{
-		name:              "connect",
-		expectContentType: "application/proto",
-	}, {
 		name:              "grpc",
 		clientOption:      connect.WithGRPC(),
 		expectContentType: "application/grpc",
-	}, {
-		name:              "grpcweb",
-		clientOption:      connect.WithGRPCWeb(),
-		expectContentType: "application/grpc-web+proto",
 	}}
 	for _, tt := range tests {
 		testcase := tt

@@ -145,89 +145,10 @@ func TestClientPeer(t *testing.T) {
 		})
 	}
 
-	t.Run("connect", func(t *testing.T) {
-		t.Parallel()
-		run(t, http.MethodPost)
-	})
-	t.Run("connect+get", func(t *testing.T) {
-		t.Parallel()
-		run(t, http.MethodGet,
-			connect.WithHTTPGet(),
-			connect.WithSendGzip(),
-		)
-	})
 	t.Run("grpc", func(t *testing.T) {
 		t.Parallel()
 		run(t, http.MethodPost, connect.WithGRPC())
 	})
-	t.Run("grpcweb", func(t *testing.T) {
-		t.Parallel()
-		run(t, http.MethodPost, connect.WithGRPCWeb())
-	})
-}
-
-func TestGetNotModified(t *testing.T) {
-	t.Parallel()
-
-	const etag = "some-etag"
-	// Handlers should automatically set Vary to include request headers that are
-	// part of the RPC protocol.
-	expectVary := []string{"Accept-Encoding"}
-
-	mux := http.NewServeMux()
-	mux.Handle(pingv1connect.NewPingServiceHandler(&notModifiedPingServer{etag: etag}))
-	server := memhttptest.NewServer(t, mux)
-	client := pingv1connect.NewPingServiceClient(
-		server.Client(),
-		server.URL(),
-		connect.WithHTTPGet(),
-	)
-	ctx := t.Context()
-	// unconditional request
-	unaryReq := connect.NewRequest(&pingv1.PingRequest{})
-	res, err := client.Ping(ctx, unaryReq)
-	assert.Nil(t, err)
-	assert.Equal(t, res.Header().Get("Etag"), etag)
-	assert.Equal(t, res.Header().Values("Vary"), expectVary)
-	assert.Equal(t, http.MethodGet, unaryReq.HTTPMethod())
-
-	unaryReq = connect.NewRequest(&pingv1.PingRequest{})
-	unaryReq.Header().Set("If-None-Match", etag)
-	_, err = client.Ping(ctx, unaryReq)
-	assert.NotNil(t, err)
-	assert.Equal(t, connect.CodeOf(err), connect.CodeUnknown)
-	assert.True(t, connect.IsNotModifiedError(err))
-	var connectErr *connect.Error
-	assert.True(t, errors.As(err, &connectErr))
-	assert.Equal(t, connectErr.Meta().Get("Etag"), etag)
-	assert.Equal(t, connectErr.Meta().Values("Vary"), expectVary)
-	assert.Equal(t, http.MethodGet, unaryReq.HTTPMethod())
-}
-
-func TestGetNoContentHeaders(t *testing.T) {
-	t.Parallel()
-
-	mux := http.NewServeMux()
-	mux.Handle(pingv1connect.NewPingServiceHandler(&pingServer{}))
-	server := memhttptest.NewServer(t, http.HandlerFunc(func(respWriter http.ResponseWriter, req *http.Request) {
-		if len(req.Header.Values("content-type")) > 0 ||
-			len(req.Header.Values("content-encoding")) > 0 ||
-			len(req.Header.Values("content-length")) > 0 {
-			http.Error(respWriter, "GET request should not include content headers", http.StatusBadRequest)
-		}
-		mux.ServeHTTP(respWriter, req)
-	}))
-	client := pingv1connect.NewPingServiceClient(
-		server.Client(),
-		server.URL(),
-		connect.WithHTTPGet(),
-	)
-	ctx := t.Context()
-
-	unaryReq := connect.NewRequest(&pingv1.PingRequest{})
-	_, err := client.Ping(ctx, unaryReq)
-	assert.Nil(t, err)
-	assert.Equal(t, http.MethodGet, unaryReq.HTTPMethod())
 }
 
 func TestConnectionDropped(t *testing.T) {
@@ -798,24 +719,6 @@ func testClientDeadlineBruteForceLoop(
 	}
 	wg.Wait()
 	t.Logf("Issued %d RPCs.", rpcCount.Load())
-}
-
-type notModifiedPingServer struct {
-	pingv1connect.UnimplementedPingServiceHandler
-
-	etag string
-}
-
-func (s *notModifiedPingServer) Ping(
-	_ context.Context,
-	req *connect.Request[pingv1.PingRequest],
-) (*connect.Response[pingv1.PingResponse], error) {
-	if req.HTTPMethod() == http.MethodGet && req.Header().Get("If-None-Match") == s.etag {
-		return nil, connect.NewNotModifiedError(http.Header{"Etag": []string{s.etag}})
-	}
-	resp := connect.NewResponse(&pingv1.PingResponse{})
-	resp.Header().Set("Etag", s.etag)
-	return resp, nil
 }
 
 type assertPeerInterceptor struct {

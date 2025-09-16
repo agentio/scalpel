@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -46,115 +45,8 @@ func TestHandler_ServeHTTP(t *testing.T) {
 	mux.Handle(path, handler)
 	mux.Handle("/prefixed/", http.StripPrefix("/prefixed", prefixed))
 	const pingProcedure = pingv1connect.PingServicePingProcedure
-	const sumProcedure = pingv1connect.PingServiceSumProcedure
 	server := memhttptest.NewServer(t, mux)
 	client := server.Client()
-
-	t.Run("get_method_no_encoding", func(t *testing.T) {
-		t.Parallel()
-		request, err := http.NewRequestWithContext(
-			t.Context(),
-			http.MethodGet,
-			server.URL()+pingProcedure,
-			strings.NewReader(""),
-		)
-		assert.Nil(t, err)
-		resp, err := client.Do(request)
-		assert.Nil(t, err)
-		defer resp.Body.Close()
-		assert.Equal(t, resp.StatusCode, http.StatusUnsupportedMediaType)
-	})
-
-	t.Run("get_method_bad_encoding", func(t *testing.T) {
-		t.Parallel()
-		request, err := http.NewRequestWithContext(
-			t.Context(),
-			http.MethodGet,
-			server.URL()+pingProcedure+`?encoding=unk&message={}`,
-			strings.NewReader(""),
-		)
-		assert.Nil(t, err)
-		resp, err := client.Do(request)
-		assert.Nil(t, err)
-		defer resp.Body.Close()
-		assert.Equal(t, resp.StatusCode, http.StatusUnsupportedMediaType)
-	})
-
-	t.Run("get_method_body_not_allowed", func(t *testing.T) {
-		t.Parallel()
-		const queryStringSuffix = `?encoding=json&message={}`
-		request, err := http.NewRequestWithContext(
-			t.Context(),
-			http.MethodGet,
-			server.URL()+pingProcedure+queryStringSuffix,
-			strings.NewReader("!"), // non-empty body
-		)
-		assert.Nil(t, err)
-		resp, err := client.Do(request)
-		assert.Nil(t, err)
-		defer resp.Body.Close()
-		assert.Equal(t, resp.StatusCode, http.StatusUnsupportedMediaType)
-
-		// Same thing, but this time w/ a content-length header
-		request, err = http.NewRequestWithContext(
-			t.Context(),
-			http.MethodGet,
-			server.URL()+pingProcedure+queryStringSuffix,
-			strings.NewReader("!"), // non-empty body
-		)
-		assert.Nil(t, err)
-		request.Header.Set("content-length", "1")
-		resp, err = client.Do(request)
-		assert.Nil(t, err)
-		defer resp.Body.Close()
-		assert.Equal(t, resp.StatusCode, http.StatusUnsupportedMediaType)
-	})
-
-	t.Run("idempotent_get_method", func(t *testing.T) {
-		t.Parallel()
-		request, err := http.NewRequestWithContext(
-			t.Context(),
-			http.MethodGet,
-			server.URL()+pingProcedure+`?encoding=json&message={}`,
-			strings.NewReader(""),
-		)
-		assert.Nil(t, err)
-		resp, err := client.Do(request)
-		assert.Nil(t, err)
-		defer resp.Body.Close()
-		assert.Equal(t, resp.StatusCode, http.StatusOK)
-	})
-
-	t.Run("prefixed_get_method", func(t *testing.T) {
-		t.Parallel()
-		request, err := http.NewRequestWithContext(
-			t.Context(),
-			http.MethodGet,
-			server.URL()+"/prefixed"+pingProcedure+`?encoding=json&message={}`,
-			strings.NewReader(""),
-		)
-		assert.Nil(t, err)
-		resp, err := client.Do(request)
-		assert.Nil(t, err)
-		defer resp.Body.Close()
-		assert.Equal(t, resp.StatusCode, http.StatusOK)
-	})
-
-	t.Run("method_not_allowed", func(t *testing.T) {
-		t.Parallel()
-		request, err := http.NewRequestWithContext(
-			t.Context(),
-			http.MethodGet,
-			server.URL()+sumProcedure,
-			strings.NewReader(""),
-		)
-		assert.Nil(t, err)
-		resp, err := client.Do(request)
-		assert.Nil(t, err)
-		defer resp.Body.Close()
-		assert.Equal(t, resp.StatusCode, http.StatusMethodNotAllowed)
-		assert.Equal(t, resp.Header.Get("Allow"), http.MethodPost)
-	})
 
 	t.Run("unsupported_content_type", func(t *testing.T) {
 		t.Parallel()
@@ -175,30 +67,7 @@ func TestHandler_ServeHTTP(t *testing.T) {
 			"application/grpc+json",
 			"application/grpc+json; charset=utf-8",
 			"application/grpc+proto",
-			"application/grpc-web",
-			"application/grpc-web+json",
-			"application/grpc-web+json; charset=utf-8",
-			"application/grpc-web+proto",
-			"application/json",
-			"application/json; charset=utf-8",
-			"application/proto",
 		}, ", "))
-	})
-
-	t.Run("charset_in_content_type_header", func(t *testing.T) {
-		t.Parallel()
-		req, err := http.NewRequestWithContext(
-			t.Context(),
-			http.MethodPost,
-			server.URL()+pingProcedure,
-			strings.NewReader("{}"),
-		)
-		assert.Nil(t, err)
-		req.Header.Set("Content-Type", "application/json;Charset=Utf-8")
-		resp, err := client.Do(req)
-		assert.Nil(t, err)
-		defer resp.Body.Close()
-		assert.Equal(t, resp.StatusCode, http.StatusOK)
 	})
 
 	t.Run("unsupported_charset", func(t *testing.T) {
@@ -215,33 +84,6 @@ func TestHandler_ServeHTTP(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 		assert.Equal(t, resp.StatusCode, http.StatusUnsupportedMediaType)
-	})
-
-	t.Run("unsupported_content_encoding", func(t *testing.T) {
-		t.Parallel()
-		req, err := http.NewRequestWithContext(
-			t.Context(),
-			http.MethodPost,
-			server.URL()+pingProcedure,
-			strings.NewReader("{}"),
-		)
-		assert.Nil(t, err)
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Content-Encoding", "invalid")
-		resp, err := client.Do(req)
-		assert.Nil(t, err)
-		defer resp.Body.Close()
-		assert.Equal(t, resp.StatusCode, http.StatusNotImplemented)
-
-		type errorMessage struct {
-			Code    string `json:"code,omitempty"`
-			Message string `json:"message,omitempty"`
-		}
-		var message errorMessage
-		err = json.NewDecoder(resp.Body).Decode(&message)
-		assert.Nil(t, err)
-		assert.Equal(t, message.Message, `unknown compression "invalid": supported encodings are gzip`)
-		assert.Equal(t, message.Code, connect.CodeUnimplemented.String())
 	})
 }
 
