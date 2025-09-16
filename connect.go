@@ -22,7 +22,7 @@
 //
 // [Connect website]: https://connectrpc.com
 // [demonstration service]: https://github.com/connectrpc/examples-go
-package connect
+package scalpel
 
 import (
 	"errors"
