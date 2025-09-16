@@ -335,7 +335,7 @@ func newClientConfig(rawURL string, options []ClientOption) (*clientConfig, *Err
 	protoPath := extractProtoPath(url.Path)
 	config := clientConfig{
 		URL:              url,
-		Protocol:         &protocolConnect{},
+		Protocol:         &protocolGRPC{web: false},
 		Procedure:        protoPath,
 		CompressionPools: make(map[string]*compressionPool),
 		BufferPool:       newBufferPool(),

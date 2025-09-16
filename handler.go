@@ -381,9 +381,9 @@ func (c *handlerConfig) newSpec() Spec {
 
 func (c *handlerConfig) newProtocolHandlers() []protocolHandler {
 	protocols := []protocol{
-		&protocolConnect{},
+		//&protocolConnect{},
 		&protocolGRPC{web: false},
-		&protocolGRPC{web: true},
+		//&protocolGRPC{web: true},
 	}
 	handlers := make([]protocolHandler, 0, len(protocols))
 	codecs := newReadOnlyCodecs(c.Codecs)
