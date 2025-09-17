@@ -26,12 +26,9 @@ import (
 	"strings"
 )
 
-// The names of the Connect, gRPC, and gRPC-Web protocols (as exposed by
-// [Peer.Protocol]). Additional protocols may be added in the future.
+// The name of the supported protocol.
 const (
-	ProtocolConnect = "connect"
-	ProtocolGRPC    = "grpc"
-	ProtocolGRPCWeb = "grpcweb"
+	ProtocolGRPC = "grpc"
 )
 
 const (

@@ -24,8 +24,7 @@ import (
 	"math"
 )
 
-// flagEnvelopeCompressed indicates that the data is compressed. It has the
-// same meaning in the gRPC-Web, gRPC-HTTP2, and Connect protocols.
+// flagEnvelopeCompressed indicates that the data is compressed.
 const flagEnvelopeCompressed = 0b00000001
 
 var errSpecialEnvelope = errorf(

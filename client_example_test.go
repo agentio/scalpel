@@ -31,8 +31,7 @@ func Example_client() {
 	// *http.Client!
 	var httpClient *http.Client = examplePingServer.Client()
 
-	// By default, clients use the Connect protocol. Add connect.WithGRPC() or
-	// connect.WithGRPCWeb() to switch protocols.
+	// Clients use the gRPC protocol.
 	client := pingv1connect.NewPingServiceClient(
 		httpClient,
 		examplePingServer.URL(),

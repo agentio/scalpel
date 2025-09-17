@@ -15,14 +15,12 @@
 package scalpel
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"math"
 	"net/http"
-	"net/textproto"
 	"runtime"
 	"strconv"
 	"strings"
@@ -41,12 +39,8 @@ const (
 
 	grpcFlagEnvelopeTrailer = 0b10000000
 
-	grpcContentTypeDefault    = "application/grpc"
-	grpcWebContentTypeDefault = "application/grpc-web"
-	grpcContentTypePrefix     = grpcContentTypeDefault + "+"
-	grpcWebContentTypePrefix  = grpcWebContentTypeDefault + "+"
-
-	headerXUserAgent = "X-User-Agent"
+	grpcContentTypeDefault = "application/grpc"
+	grpcContentTypePrefix  = grpcContentTypeDefault + "+"
 
 	upperhex = "0123456789ABCDEF"
 )
@@ -73,15 +67,11 @@ var (
 )
 
 type protocolGRPC struct {
-	web bool
 }
 
 // NewHandler implements protocol, so it must return an interface.
 func (g *protocolGRPC) NewHandler(params *protocolHandlerParams) protocolHandler {
 	bare, prefix := grpcContentTypeDefault, grpcContentTypePrefix
-	if g.web {
-		bare, prefix = grpcWebContentTypeDefault, grpcWebContentTypePrefix
-	}
 	contentTypes := make(map[string]struct{})
 	for _, name := range params.Codecs.Names() {
 		contentTypes[canonicalizeContentType(prefix+name)] = struct{}{}
@@ -91,7 +81,6 @@ func (g *protocolGRPC) NewHandler(params *protocolHandlerParams) protocolHandler
 	}
 	return &grpcHandler{
 		protocolHandlerParams: *params,
-		web:                   g.web,
 		accept:                contentTypes,
 	}
 }
@@ -99,12 +88,8 @@ func (g *protocolGRPC) NewHandler(params *protocolHandlerParams) protocolHandler
 // NewClient implements protocol, so it must return an interface.
 func (g *protocolGRPC) NewClient(params *protocolClientParams) (protocolClient, error) {
 	peer := newPeerForURL(params.URL, ProtocolGRPC)
-	if g.web {
-		peer = newPeerForURL(params.URL, ProtocolGRPCWeb)
-	}
 	return &grpcClient{
 		protocolClientParams: *params,
-		web:                  g.web,
 		peer:                 peer,
 	}, nil
 }
@@ -112,7 +97,6 @@ func (g *protocolGRPC) NewClient(params *protocolClientParams) (protocolClient, 
 type grpcHandler struct {
 	protocolHandlerParams
 
-	web    bool
 	accept map[string]struct{}
 }
 
@@ -173,19 +157,15 @@ func (g *grpcHandler) NewConn(
 		header[grpcHeaderCompression] = []string{responseCompression}
 	}
 
-	codecName := grpcCodecForContentType(g.web, getHeaderCanonical(request.Header, headerContentType))
+	codecName := grpcCodecForContentType(getHeaderCanonical(request.Header, headerContentType))
 	codec := g.Codecs.Get(codecName) // handler.go guarantees this is not nil
 	protocolName := ProtocolGRPC
-	if g.web {
-		protocolName = ProtocolGRPCWeb
-	}
 	conn := wrapHandlerConnWithCodedErrors(&grpcHandlerConn{
 		spec: g.Spec,
 		peer: Peer{
 			Addr:     request.RemoteAddr,
 			Protocol: protocolName,
 		},
-		web:        g.web,
 		bufferPool: g.BufferPool,
 		protobuf:   g.Codecs.Protobuf(), // for errors
 		marshaler: grpcMarshaler{
@@ -212,7 +192,6 @@ func (g *grpcHandler) NewConn(
 				bufferPool:      g.BufferPool,
 				readMaxBytes:    g.ReadMaxBytes,
 			},
-			web: g.web,
 		},
 	})
 	if failed != nil {
@@ -226,7 +205,6 @@ func (g *grpcHandler) NewConn(
 type grpcClient struct {
 	protocolClientParams
 
-	web  bool
 	peer Peer
 }
 
@@ -240,14 +218,7 @@ func (g *grpcClient) WriteRequestHeader(_ StreamType, header http.Header) {
 	if getHeaderCanonical(header, headerUserAgent) == "" {
 		header[headerUserAgent] = []string{defaultGrpcUserAgent}
 	}
-	if g.web && getHeaderCanonical(header, headerXUserAgent) == "" {
-		// The gRPC-Web pseudo-specification seems to require X-User-Agent rather
-		// than User-Agent for all clients, even if they're not browser-based. This
-		// is very odd for a backend client, so we'll split the difference and set
-		// both.
-		header[headerXUserAgent] = []string{defaultGrpcUserAgent}
-	}
-	header[headerContentType] = []string{grpcContentTypeForCodecName(g.web, g.Codec.Name())}
+	header[headerContentType] = []string{grpcContentTypeForCodecName(g.Codec.Name())}
 	// gRPC handles compression on a per-message basis, so we don't want to
 	// compress the whole stream. By default, http.Client will ask the server
 	// to gzip the stream if we don't set Accept-Encoding.
@@ -258,11 +229,9 @@ func (g *grpcClient) WriteRequestHeader(_ StreamType, header http.Header) {
 	if acceptCompression := g.CompressionPools.CommaSeparatedNames(); acceptCompression != "" {
 		header[grpcHeaderAcceptCompression] = []string{acceptCompression}
 	}
-	if !g.web {
-		// The gRPC-HTTP2 specification requires this - it flushes out proxies that
-		// don't support HTTP trailers.
-		header["Te"] = []string{"trailers"}
-	}
+	// The gRPC-HTTP2 specification requires this - it flushes out proxies that
+	// don't support HTTP trailers.
+	header["Te"] = []string{"trailers"}
 }
 
 func (g *grpcClient) NewConn(
@@ -312,22 +281,15 @@ func (g *grpcClient) NewConn(
 		responseTrailer: make(http.Header),
 	}
 	duplexCall.SetValidateResponse(conn.validateResponse)
-	if g.web {
-		conn.unmarshaler.web = true
-		conn.readTrailers = func(unmarshaler *grpcUnmarshaler, _ *duplexHTTPCall) http.Header {
-			return unmarshaler.WebTrailer()
-		}
-	} else {
-		conn.readTrailers = func(_ *grpcUnmarshaler, call *duplexHTTPCall) http.Header {
-			// To access HTTP trailers, we need to read the body to EOF.
-			_, _ = discard(call)
-			return call.ResponseTrailer()
-		}
+	conn.readTrailers = func(_ *grpcUnmarshaler, call *duplexHTTPCall) http.Header {
+		// To access HTTP trailers, we need to read the body to EOF.
+		_, _ = discard(call)
+		return call.ResponseTrailer()
 	}
 	return wrapClientConnWithCodedErrors(conn)
 }
 
-// grpcClientConn works for both gRPC and gRPC-Web.
+// grpcClientConn works for gRPC.
 type grpcClientConn struct {
 	spec             Spec
 	peer             Peer
@@ -443,7 +405,6 @@ func (cc *grpcClientConn) validateResponse(response *http.Response) *Error {
 		response,
 		cc.responseHeader,
 		cc.compressionPools,
-		cc.unmarshaler.web,
 		cc.marshaler.codec.Name(),
 	); err != nil {
 		return err
@@ -456,7 +417,6 @@ func (cc *grpcClientConn) validateResponse(response *http.Response) *Error {
 type grpcHandlerConn struct {
 	spec            Spec
 	peer            Peer
-	web             bool
 	bufferPool      *bufferPool
 	protobuf        Codec // for errors
 	marshaler       grpcMarshaler
@@ -534,21 +494,6 @@ func (hc *grpcHandlerConn) Close(err error) (retErr error) {
 	)
 	mergeHeaders(mergedTrailers, hc.responseTrailer)
 	grpcErrorToTrailer(mergedTrailers, hc.protobuf, err)
-	if hc.web && !hc.wroteToBody && len(hc.responseHeader) == 0 {
-		// We're using gRPC-Web, we haven't yet written to the body, and there are no
-		// custom headers. That means we can send a "trailers-only" response and send
-		// trailing metadata as HTTP headers (instead of as trailers).
-		mergeHeaders(hc.responseWriter.Header(), mergedTrailers)
-		return nil
-	}
-	if hc.web {
-		// We're using gRPC-Web and we've already sent the headers, so we write
-		// trailing metadata to the HTTP body.
-		if err := hc.marshaler.MarshalWebTrailers(mergedTrailers); err != nil {
-			return err
-		}
-		return nil // must be a literal nil: nil *Error is a non-nil error
-	}
 	// We're using standard gRPC. Even if we haven't written to the body and
 	// we're sending a "trailers-only" response, we must send trailing metadata
 	// as HTTP trailers. (If we had frame-level control of the HTTP/2 layer, we
@@ -602,7 +547,6 @@ func (m *grpcMarshaler) MarshalWebTrailers(trailer http.Header) *Error {
 type grpcUnmarshaler struct {
 	envelopeReader
 
-	web        bool
 	webTrailer http.Header
 }
 
@@ -618,28 +562,7 @@ func (u *grpcUnmarshaler) Unmarshal(message any) *Error {
 	data := env.Data
 	u.last.Data = nil // don't keep a reference to it
 	defer u.bufferPool.Put(data)
-	if !u.web || !env.IsSet(grpcFlagEnvelopeTrailer) {
-		return errorf(CodeInternal, "protocol error: invalid envelope flags %d", env.Flags)
-	}
-
-	// Per the gRPC-Web specification, trailers should be encoded as an HTTP/1
-	// headers block _without_ the terminating newline. To make the headers
-	// parseable by net/textproto, we need to add the newline.
-	if err := data.WriteByte('\n'); err != nil {
-		return errorf(CodeInternal, "unmarshal web trailers: %w", err)
-	}
-	bufferedReader := bufio.NewReader(data)
-	mimeReader := textproto.NewReader(bufferedReader)
-	mimeHeader, mimeErr := mimeReader.ReadMIMEHeader()
-	if mimeErr != nil {
-		return errorf(
-			CodeInternal,
-			"gRPC-Web protocol error: trailers invalid: %w",
-			mimeErr,
-		)
-	}
-	u.webTrailer = http.Header(mimeHeader)
-	return errSpecialEnvelope
+	return errorf(CodeInternal, "protocol error: invalid envelope flags %d", env.Flags)
 }
 
 func (u *grpcUnmarshaler) WebTrailer() http.Header {
@@ -650,14 +573,12 @@ func grpcValidateResponse(
 	response *http.Response,
 	header http.Header,
 	availableCompressors readOnlyCompressionPools,
-	web bool,
 	codecName string,
 ) *Error {
 	if response.StatusCode != http.StatusOK {
 		return errorf(httpToCode(response.StatusCode), "HTTP status %v", response.Status)
 	}
 	if err := grpcValidateResponseContentType(
-		web,
 		codecName,
 		getHeaderCanonical(response.Header, headerContentType),
 	); err != nil {
@@ -812,22 +733,16 @@ func grpcTimeoutUnitLookup(unit byte) (time.Duration, error) {
 	}
 }
 
-func grpcCodecForContentType(web bool, contentType string) string {
-	if (!web && contentType == grpcContentTypeDefault) || (web && contentType == grpcWebContentTypeDefault) {
+func grpcCodecForContentType(contentType string) string {
+	if contentType == grpcContentTypeDefault {
 		// implicitly protobuf
 		return codecNameProto
 	}
 	prefix := grpcContentTypePrefix
-	if web {
-		prefix = grpcWebContentTypePrefix
-	}
 	return strings.TrimPrefix(contentType, prefix)
 }
 
-func grpcContentTypeForCodecName(web bool, name string) string {
-	if web {
-		return grpcWebContentTypePrefix + name
-	}
+func grpcContentTypeForCodecName(name string) string {
 	if name == codecNameProto {
 		// For compatibility with Google Cloud Platform's frontends, prefer an
 		// implicit default codec. See
@@ -982,12 +897,9 @@ func validateHex(input string) error {
 	return nil
 }
 
-func grpcValidateResponseContentType(web bool, requestCodecName string, responseContentType string) *Error {
+func grpcValidateResponseContentType(requestCodecName string, responseContentType string) *Error {
 	// Responses must have valid content-type that indicates same codec as the request.
 	bare, prefix := grpcContentTypeDefault, grpcContentTypePrefix
-	if web {
-		bare, prefix = grpcWebContentTypeDefault, grpcWebContentTypePrefix
-	}
 	if responseContentType == prefix+requestCodecName ||
 		(requestCodecName == codecNameProto && responseContentType == bare) {
 		return nil

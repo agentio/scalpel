@@ -1900,24 +1900,6 @@ func TestGRPCErrorMetadataIsTrailersOnly(t *testing.T) {
 	assert.NotZero(t, res.Trailer.Get(handlerTrailer))
 }
 
-func TestConnectProtocolHeaderSentByDefault(t *testing.T) {
-	t.Parallel()
-	mux := http.NewServeMux()
-	mux.Handle(pingv1connect.NewPingServiceHandler(pingServer{}, connect.WithRequireConnectProtocolHeader()))
-	server := memhttptest.NewServer(t, mux)
-
-	client := pingv1connect.NewPingServiceClient(server.Client(), server.URL())
-	_, err := client.Ping(t.Context(), connect.NewRequest(&pingv1.PingRequest{}))
-	assert.Nil(t, err)
-
-	stream := client.CumSum(t.Context())
-	assert.Nil(t, stream.Send(&pingv1.CumSumRequest{}))
-	_, err = stream.Receive()
-	assert.Nil(t, err)
-	assert.Nil(t, stream.CloseRequest())
-	assert.Nil(t, stream.CloseResponse())
-}
-
 func TestAllowCustomUserAgent(t *testing.T) {
 	t.Parallel()
 

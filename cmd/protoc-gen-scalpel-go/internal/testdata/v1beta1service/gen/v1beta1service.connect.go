@@ -58,9 +58,8 @@ type ExampleV1BetaClient interface {
 }
 
 // NewExampleV1BetaClient constructs a client for the example.ExampleV1beta service. By default, it
-// uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
-// uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
-// connect.WithGRPCWeb() options.
+// uses the gRPCConnect protocol with the binary Protobuf Codec, asks for gzipped responses, and
+// sends uncompressed requests.
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).

@@ -13,8 +13,7 @@
 // limitations under the License.
 
 // Package connect is a slim RPC framework built on Protocol Buffers and
-// [net/http]. In addition to supporting its own protocol, Connect handlers and
-// clients are wire-compatible with gRPC and gRPC-Web, including streaming.
+// [net/http].
 //
 // This documentation is intended to explain each type and function in
 // isolation. Walkthroughs, FAQs, and other narrative docs are available on the
@@ -328,8 +327,7 @@ type Spec struct {
 // in IP:port format.
 //
 // On both the client and the server, Protocol is the RPC protocol in use.
-// Currently, it's either [ProtocolConnect], [ProtocolGRPC], or
-// [ProtocolGRPCWeb], but additional protocols may be added in the future.
+// Currently, it's [ProtocolGRPC].
 //
 // Query contains the query parameters for the request. For the server, this
 // will reflect the actual query parameters sent. For the client, it is unset.

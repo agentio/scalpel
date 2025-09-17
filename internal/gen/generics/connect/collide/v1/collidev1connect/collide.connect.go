@@ -57,9 +57,8 @@ type CollideServiceClient interface {
 }
 
 // NewCollideServiceClient constructs a client for the connect.collide.v1.CollideService service. By
-// default, it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses,
-// and sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the
-// connect.WithGRPC() or connect.WithGRPCWeb() options.
+// default, it uses the gRPCConnect protocol with the binary Protobuf Codec, asks for gzipped
+// responses, and sends uncompressed requests.
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).

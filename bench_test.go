@@ -51,17 +51,9 @@ func BenchmarkConnect(b *testing.B) {
 		name string
 		opts []connect.ClientOption
 	}{{
-		name: "connect",
-		opts: []connect.ClientOption{},
-	}, {
 		name: "grpc",
 		opts: []connect.ClientOption{
 			connect.WithGRPC(),
-		},
-	}, {
-		name: "grpcweb",
-		opts: []connect.ClientOption{
-			connect.WithGRPCWeb(),
 		},
 	}}
 

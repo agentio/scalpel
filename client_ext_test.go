@@ -154,13 +154,10 @@ func TestClientPeer(t *testing.T) {
 func TestConnectionDropped(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
-	for _, protocol := range []string{connect.ProtocolConnect, connect.ProtocolGRPC, connect.ProtocolGRPCWeb} {
+	for _, protocol := range []string{connect.ProtocolGRPC} {
 		var opts []connect.ClientOption
-		switch protocol {
-		case connect.ProtocolGRPC:
+		if protocol == connect.ProtocolGRPC {
 			opts = []connect.ClientOption{connect.WithGRPC()}
-		case connect.ProtocolGRPCWeb:
-			opts = []connect.ClientOption{connect.WithGRPCWeb()}
 		}
 		t.Run(protocol, func(t *testing.T) {
 			t.Parallel()
@@ -571,7 +568,7 @@ func TestClientDeadlineHandling(t *testing.T) {
 		extraField = protowire.AppendBytes(extraField, extraData)
 
 		clientConnect := pingv1connect.NewPingServiceClient(svr.Client(), svr.URL, connect.WithSendGzip())
-		clientGRPC := pingv1connect.NewPingServiceClient(svr.Client(), svr.URL, connect.WithSendGzip(), connect.WithGRPCWeb())
+		clientGRPC := pingv1connect.NewPingServiceClient(svr.Client(), svr.URL, connect.WithSendGzip(), connect.WithGRPC())
 		var count atomic.Int32
 		testClientDeadlineBruteForceLoop(t,
 			20*time.Second, 200, runtime.GOMAXPROCS(0),

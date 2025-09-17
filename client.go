@@ -28,9 +28,8 @@ import (
 // Depending on the procedure's type, use the CallUnary, CallClientStream,
 // CallServerStream, or CallBidiStream method.
 //
-// By default, clients use the Connect protocol with the binary Protobuf Codec,
-// ask for gzipped responses, and send uncompressed requests. To use the gRPC
-// or gRPC-Web protocols, use the [WithGRPC] or [WithGRPCWeb] options.
+// Clients use the gRPC protocol with the binary Protobuf Codec,
+// ask for gzipped responses, and send uncompressed requests.
 type Client[Req, Res any] struct {
 	config         *clientConfig
 	callUnary      func(context.Context, *Request[Req]) (*Response[Res], error)
@@ -335,7 +334,7 @@ func newClientConfig(rawURL string, options []ClientOption) (*clientConfig, *Err
 	protoPath := extractProtoPath(url.Path)
 	config := clientConfig{
 		URL:              url,
-		Protocol:         &protocolGRPC{web: false},
+		Protocol:         &protocolGRPC{},
 		Procedure:        protoPath,
 		CompressionPools: make(map[string]*compressionPool),
 		BufferPool:       newBufferPool(),

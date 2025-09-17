@@ -32,7 +32,7 @@ import (
 
 func TestGRPCHandlerSender(t *testing.T) {
 	t.Parallel()
-	newConn := func(web bool) *grpcHandlerConn {
+	newConn := func() *grpcHandlerConn {
 		responseWriter := httptest.NewRecorder()
 		protobufCodec := &protoBinaryCodec{}
 		bufferPool := newBufferPool()
@@ -44,7 +44,6 @@ func TestGRPCHandlerSender(t *testing.T) {
 		assert.Nil(t, err)
 		return &grpcHandlerConn{
 			spec:       Spec{},
-			web:        web,
 			bufferPool: bufferPool,
 			protobuf:   protobufCodec,
 			marshaler: grpcMarshaler{
@@ -67,13 +66,9 @@ func TestGRPCHandlerSender(t *testing.T) {
 			},
 		}
 	}
-	t.Run("web", func(t *testing.T) {
-		t.Parallel()
-		testGRPCHandlerConnMetadata(t, newConn(true))
-	})
 	t.Run("http2", func(t *testing.T) {
 		t.Parallel()
-		testGRPCHandlerConnMetadata(t, newConn(false))
+		testGRPCHandlerConnMetadata(t, newConn())
 	})
 }
 
@@ -177,26 +172,6 @@ func TestGRPCPercentEncoding(t *testing.T) {
 	roundtrip("fiancée")
 }
 
-func TestGRPCWebTrailerMarshalling(t *testing.T) {
-	t.Parallel()
-	responseWriter := httptest.NewRecorder()
-	marshaler := grpcMarshaler{
-		envelopeWriter: envelopeWriter{
-			sender:     writeSender{writer: responseWriter},
-			bufferPool: newBufferPool(),
-		},
-	}
-	trailer := http.Header{}
-	trailer.Add("grpc-status", "0")
-	trailer.Add("Grpc-Message", "Foo")
-	trailer.Add("User-Provided", "bar")
-	err := marshaler.MarshalWebTrailers(trailer)
-	assert.Nil(t, err)
-	responseWriter.Body.Next(5) // skip flags and message length
-	marshalled := responseWriter.Body.String()
-	assert.Equal(t, marshalled, "grpc-message: Foo\r\ngrpc-status: 0\r\nuser-provided: bar\r\n")
-}
-
 func BenchmarkGRPCPercentEncoding(b *testing.B) {
 	input := "Hello, 世界"
 	want := "Hello, %E4%B8%96%E7%95%8C"
@@ -236,7 +211,6 @@ func BenchmarkGRPCTimeoutEncoding(b *testing.B) {
 func TestGRPCValidateResponseContentType(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
-		web                 bool
 		codecName           string
 		responseContentType string
 		expectCode          Code
@@ -249,59 +223,6 @@ func TestGRPCValidateResponseContentType(t *testing.T) {
 		{
 			codecName:           codecNameProto,
 			responseContentType: "application/grpc+proto",
-		},
-		{
-			codecName:           codecNameJSON,
-			responseContentType: "application/grpc+json",
-		},
-		{
-			codecName:           codecNameProto,
-			web:                 true,
-			responseContentType: "application/grpc-web",
-		},
-		{
-			codecName:           codecNameProto,
-			web:                 true,
-			responseContentType: "application/grpc-web+proto",
-		},
-		{
-			codecName:           codecNameJSON,
-			web:                 true,
-			responseContentType: "application/grpc-web+json",
-		},
-		// Mismatched response codec
-		{
-			codecName:           codecNameProto,
-			responseContentType: "application/grpc+json",
-			expectCode:          CodeInternal,
-		},
-		{
-			codecName:           codecNameJSON,
-			responseContentType: "application/grpc",
-			expectCode:          CodeInternal,
-		},
-		{
-			codecName:           codecNameJSON,
-			responseContentType: "application/grpc+proto",
-			expectCode:          CodeInternal,
-		},
-		{
-			codecName:           codecNameProto,
-			web:                 true,
-			responseContentType: "application/grpc-web+json",
-			expectCode:          CodeInternal,
-		},
-		{
-			codecName:           codecNameJSON,
-			web:                 true,
-			responseContentType: "application/grpc-web",
-			expectCode:          CodeInternal,
-		},
-		{
-			codecName:           codecNameJSON,
-			web:                 true,
-			responseContentType: "application/grpc-web+proto",
-			expectCode:          CodeInternal,
 		},
 		// Disallowed content-types
 		{
@@ -331,50 +252,16 @@ func TestGRPCValidateResponseContentType(t *testing.T) {
 		},
 		{
 			codecName:           codecNameProto,
-			web:                 true,
-			responseContentType: "application/proto",
-			expectCode:          CodeUnknown,
-		},
-		{
-			codecName:           codecNameProto,
-			web:                 true,
-			responseContentType: "application/grpc",
-			expectCode:          CodeUnknown,
-		},
-		{
-			codecName:           codecNameProto,
-			web:                 true,
-			responseContentType: "application/grpc+proto",
-			expectCode:          CodeUnknown,
-		},
-		{
-			codecName:           codecNameJSON,
-			web:                 true,
-			responseContentType: "application/json",
-			expectCode:          CodeUnknown,
-		},
-		{
-			codecName:           codecNameJSON,
-			web:                 true,
-			responseContentType: "application/grpc+json",
-			expectCode:          CodeUnknown,
-		},
-		{
-			codecName:           codecNameProto,
 			responseContentType: "some/garbage",
 			expectCode:          CodeUnknown,
 		},
 	}
 	for _, testCase := range testCases {
 		protocol := ProtocolGRPC
-		if testCase.web {
-			protocol = ProtocolGRPCWeb
-		}
 		testCaseName := fmt.Sprintf("%s_%s->%s", protocol, testCase.codecName, testCase.responseContentType)
 		t.Run(testCaseName, func(t *testing.T) {
 			t.Parallel()
 			err := grpcValidateResponseContentType(
-				testCase.web,
 				testCase.codecName,
 				testCase.responseContentType,
 			)
