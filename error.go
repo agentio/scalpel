@@ -173,7 +173,7 @@ func IsWireError(err error) bool {
 // NewNotModifiedError indicates that the requested resource hasn't changed. It
 // should be used only when handlers wish to respond to conditional HTTP GET
 // requests with a 304 Not Modified. In all other circumstances, including all
-// RPCs using the gRPC or gRPC-Web protocols, it's equivalent to sending an
+// RPCs using gRPC, it's equivalent to sending an
 // error with [CodeUnknown]. The supplied headers should include Etag,
 // Cache-Control, or any other headers required by [RFC 9110 § 15.4.5].
 //

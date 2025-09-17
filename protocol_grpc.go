@@ -359,7 +359,7 @@ func (cc *grpcClientConn) Receive(msg any) error {
 		return serverErr
 	}
 
-	// See if the server sent an explicit error in the HTTP or gRPC-Web trailers.
+	// See if the server sent an explicit error in the HTTP trailers.
 	serverErr := grpcErrorForTrailer(cc.protobuf, cc.responseTrailer)
 	if serverErr != nil && (errors.Is(err, io.EOF) || !errors.Is(serverErr, errTrailersWithoutGRPCStatus)) {
 		// We've either:

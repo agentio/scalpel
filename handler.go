@@ -22,8 +22,8 @@ import (
 // A Handler is the server-side implementation of a single RPC defined by a
 // service schema.
 //
-// By default, Handlers support the Connect, gRPC, and gRPC-Web protocols with
-// the binary Protobuf and JSON codecs. They support gzip compression using the
+// By default, Handlers support the gRPC protocol with
+// the binary Protobuf codec. They support gzip compression using the
 // standard library's [compress/gzip].
 type Handler struct {
 	spec             Spec

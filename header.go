@@ -47,8 +47,7 @@ var protocolHeaders = map[string]struct{}{
 
 // EncodeBinaryHeader base64-encodes the data. It always emits unpadded values.
 //
-// In the Connect, gRPC, and gRPC-Web protocols, binary headers must have keys
-// ending in "-Bin".
+// In the gRPC protocol, binary headers must have keys ending in "-Bin".
 func EncodeBinaryHeader(data []byte) string {
 	// gRPC specification says that implementations should emit unpadded values.
 	return base64.RawStdEncoding.EncodeToString(data)
@@ -59,8 +58,7 @@ func EncodeBinaryHeader(data []byte) string {
 // be joined with a comma. When receiving such comma-separated values, split
 // them with [strings.Split] before calling DecodeBinaryHeader.
 //
-// Binary headers sent using the Connect, gRPC, and gRPC-Web protocols have
-// keys ending in "-Bin".
+// Binary headers sent have keys ending in "-Bin".
 func DecodeBinaryHeader(data string) ([]byte, error) {
 	if len(data)%4 != 0 {
 		// Data definitely isn't padded.
