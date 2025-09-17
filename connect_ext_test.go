@@ -791,7 +791,6 @@ func TestErrorHeaderPropagation(t *testing.T) {
 		}
 		err.Meta().Set("Content-Length", "1337")
 		err.Meta().Set("Content-Type", "application/xml")
-		err.Meta().Set("Accept-Encoding", "bogus")
 		err.Meta().Set("Date", "Thu, 01 Jan 1970 00:00:00 GMT")
 		err.Meta().Set("Grpc-Status", "0")
 		// Set custom headers.
@@ -833,7 +832,6 @@ func TestErrorHeaderPropagation(t *testing.T) {
 		}
 		meta := connectErr.Meta()
 		assert.NotEqual(t, meta.Values("Content-Length"), []string{"1337"})
-		assert.NotEqual(t, meta.Values("Accept-Encoding"), []string{"bogus"})
 		assert.NotEqual(t, meta.Values("Content-Type"), []string{"application/xml"})
 		assert.NotEqual(t, meta.Values("Content-Length"), []string{"1337"})
 		assert.NotEqual(t, meta.Values("Date"), []string{"Thu, 01 Jan 1970 00:00:00 GMT"})

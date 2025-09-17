@@ -36,8 +36,6 @@ var (
 	// errNotModified signals Connect-protocol responses to GET requests to use the
 	// 304 Not Modified HTTP error code.
 	errNotModified = errors.New("not modified")
-	// errNotModifiedClient wraps ErrNotModified for use client-side.
-	errNotModifiedClient = fmt.Errorf("HTTP 304: %w", errNotModified)
 )
 
 // An ErrorDetail is a self-describing Protobuf message attached to an [*Error].
@@ -49,9 +47,8 @@ var (
 // The [google.golang.org/genproto/googleapis/rpc/errdetails] package contains a
 // variety of Protobuf messages commonly used as error details.
 type ErrorDetail struct {
-	pbAny    *anypb.Any
-	pbInner  proto.Message // if nil, must be extracted from pbAny
-	wireJSON string        // preserve human-readable JSON
+	pbAny   *anypb.Any
+	pbInner proto.Message // if nil, must be extracted from pbAny
 }
 
 // NewErrorDetail constructs a new error detail. If msg is an *[anypb.Any] then

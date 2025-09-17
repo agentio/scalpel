@@ -29,13 +29,6 @@ var protocolHeaders = map[string]struct{}{
 	headerUserAgent:       {},
 	headerTrailer:         {},
 	headerDate:            {},
-	// Connect headers.
-	connectUnaryHeaderAcceptCompression:     {},
-	connectUnaryTrailerPrefix:               {},
-	connectStreamingHeaderCompression:       {},
-	connectStreamingHeaderAcceptCompression: {},
-	connectHeaderTimeout:                    {},
-	connectHeaderProtocolVersion:            {},
 	// gRPC headers.
 	grpcHeaderCompression:       {},
 	grpcHeaderAcceptCompression: {},
