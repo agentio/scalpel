@@ -16,14 +16,11 @@ package scalpel
 
 import (
 	"bytes"
-	"strings"
 	"testing"
 	"testing/quick"
 
-	"github.com/agentio/scalpel/internal/assert"
 	pingv1 "github.com/agentio/scalpel/internal/gen/connect/ping/v1"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -55,9 +52,6 @@ func TestCodecRoundTrips(t *testing.T) {
 	if err := quick.Check(makeRoundtrip(&protoBinaryCodec{}), nil /* config */); err != nil {
 		t.Error(err)
 	}
-	if err := quick.Check(makeRoundtrip(&protoJSONCodec{}), nil /* config */); err != nil {
-		t.Error(err)
-	}
 }
 
 func TestAppendCodec(t *testing.T) {
@@ -81,9 +75,6 @@ func TestAppendCodec(t *testing.T) {
 		}
 	}
 	if err := quick.Check(makeRoundtrip(&protoBinaryCodec{}), nil /* config */); err != nil {
-		t.Error(err)
-	}
-	if err := quick.Check(makeRoundtrip(&protoJSONCodec{}), nil /* config */); err != nil {
 		t.Error(err)
 	}
 }
@@ -120,36 +111,4 @@ func TestStableCodec(t *testing.T) {
 	if err := quick.Check(makeRoundtrip(&protoBinaryCodec{}), nil /* config */); err != nil {
 		t.Error(err)
 	}
-	if err := quick.Check(makeRoundtrip(&protoJSONCodec{}), nil /* config */); err != nil {
-		t.Error(err)
-	}
-}
-
-func TestJSONCodec(t *testing.T) {
-	t.Parallel()
-
-	codec := &protoJSONCodec{name: codecNameJSON}
-
-	t.Run("success", func(t *testing.T) {
-		t.Parallel()
-		err := codec.Unmarshal([]byte("{}"), &emptypb.Empty{})
-		assert.Nil(t, err)
-	})
-
-	t.Run("unknown fields", func(t *testing.T) {
-		t.Parallel()
-		err := codec.Unmarshal([]byte(`{"foo": "bar"}`), &emptypb.Empty{})
-		assert.Nil(t, err)
-	})
-
-	t.Run("empty string", func(t *testing.T) {
-		t.Parallel()
-		err := codec.Unmarshal([]byte{}, &emptypb.Empty{})
-		assert.NotNil(t, err)
-		assert.True(
-			t,
-			strings.Contains(err.Error(), "valid JSON"),
-			assert.Sprintf(`error message should explain that "" is not a valid JSON object`),
-		)
-	})
 }

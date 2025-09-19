@@ -23,8 +23,7 @@ import (
 // service schema.
 //
 // By default, Handlers support the gRPC protocol with
-// the binary Protobuf codec. They support gzip compression using the
-// standard library's [compress/gzip].
+// the binary Protobuf codec.
 type Handler struct {
 	spec             Spec
 	implementation   StreamingHandlerFunc
@@ -358,7 +357,6 @@ func newHandlerConfig(procedure string, streamType StreamType, options []Handler
 		StreamType: streamType,
 	}
 	withProtoBinaryCodec().applyToHandler(&config)
-	withProtoJSONCodecs().applyToHandler(&config)
 	for _, opt := range options {
 		opt.applyToHandler(&config)
 	}

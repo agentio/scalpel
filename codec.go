@@ -15,20 +15,14 @@
 package scalpel
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
 	"fmt"
 
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/runtime/protoiface"
 )
 
 const (
-	codecNameProto           = "proto"
-	codecNameJSON            = "json"
-	codecNameJSONCharsetUTF8 = codecNameJSON + "; charset=utf-8"
+	codecNameProto = "proto"
 )
 
 // Codec marshals structs (typically generated from a schema) to and from bytes.
@@ -141,69 +135,6 @@ func (c *protoBinaryCodec) MarshalStable(message any) ([]byte, error) {
 
 func (c *protoBinaryCodec) IsBinary() bool {
 	return true
-}
-
-type protoJSONCodec struct {
-	name string
-}
-
-var _ Codec = (*protoJSONCodec)(nil)
-
-func (c *protoJSONCodec) Name() string { return c.name }
-
-func (c *protoJSONCodec) Marshal(message any) ([]byte, error) {
-	protoMessage, ok := message.(proto.Message)
-	if !ok {
-		return nil, errNotProto(message)
-	}
-	return protojson.MarshalOptions{}.Marshal(protoMessage)
-}
-
-func (c *protoJSONCodec) MarshalAppend(dst []byte, message any) ([]byte, error) {
-	protoMessage, ok := message.(proto.Message)
-	if !ok {
-		return nil, errNotProto(message)
-	}
-	return protojson.MarshalOptions{}.MarshalAppend(dst, protoMessage)
-}
-
-func (c *protoJSONCodec) Unmarshal(binary []byte, message any) error {
-	protoMessage, ok := message.(proto.Message)
-	if !ok {
-		return errNotProto(message)
-	}
-	if len(binary) == 0 {
-		return errors.New("zero-length payload is not a valid JSON object")
-	}
-	// Discard unknown fields so clients and servers aren't forced to always use
-	// exactly the same version of the schema.
-	options := protojson.UnmarshalOptions{DiscardUnknown: true}
-	err := options.Unmarshal(binary, protoMessage)
-	if err != nil {
-		return fmt.Errorf("unmarshal into %T: %w", message, err)
-	}
-	return nil
-}
-
-func (c *protoJSONCodec) MarshalStable(message any) ([]byte, error) {
-	// protojson does not offer a "deterministic" field ordering, but fields
-	// are still ordered consistently by their index. However, protojson can
-	// output inconsistent whitespace for some reason, therefore it is
-	// suggested to use a formatter to ensure consistent formatting.
-	// https://github.com/golang/protobuf/issues/1373
-	messageJSON, err := c.Marshal(message)
-	if err != nil {
-		return nil, err
-	}
-	compactedJSON := bytes.NewBuffer(messageJSON[:0])
-	if err = json.Compact(compactedJSON, messageJSON); err != nil {
-		return nil, err
-	}
-	return compactedJSON.Bytes(), nil
-}
-
-func (c *protoJSONCodec) IsBinary() bool {
-	return false
 }
 
 // readOnlyCodecs is a read-only interface to a map of named codecs.

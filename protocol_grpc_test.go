@@ -241,16 +241,6 @@ func TestGRPCValidateResponseContentType(t *testing.T) {
 			expectCode:          CodeUnknown,
 		},
 		{
-			codecName:           codecNameJSON,
-			responseContentType: "application/json",
-			expectCode:          CodeUnknown,
-		},
-		{
-			codecName:           codecNameJSON,
-			responseContentType: "application/grpc-web+json",
-			expectCode:          CodeUnknown,
-		},
-		{
 			codecName:           codecNameProto,
 			responseContentType: "some/garbage",
 			expectCode:          CodeUnknown,

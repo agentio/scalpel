@@ -37,15 +37,6 @@ func WithGRPC() ClientOption {
 	return &grpcOption{}
 }
 
-// WithProtoJSON configures a client to send JSON-encoded data instead of
-// binary Protobuf. It uses the standard Protobuf JSON mapping as implemented
-// by [google.golang.org/protobuf/encoding/protojson]: fields are named using
-// lowerCamelCase, zero values are omitted, missing required fields are errors,
-// enums are emitted as strings, etc.
-func WithProtoJSON() ClientOption {
-	return WithCodec(&protoJSONCodec{codecNameJSON})
-}
-
 // A HandlerOption configures a [Handler].
 //
 // In addition to any options grouped in the documentation below, remember that
@@ -128,13 +119,7 @@ func WithResponseInitializer(initializer func(spec Spec, message any) error) Cli
 // chooses. Clients may only have a single codec.
 //
 // By default, handlers and clients support binary Protocol Buffer data using
-// [google.golang.org/protobuf/proto]. Handlers also support JSON by default,
-// using the standard Protobuf JSON mapping. Users with more specialized needs
-// may override the default codecs by registering a new codec under the "proto"
-// or "json" names. When supplying a custom "proto" codec, keep in mind that
-// some unexported, protocol-specific messages are serialized using Protobuf -
-// take care to fall back to the standard Protobuf implementation if
-// necessary.
+// [google.golang.org/protobuf/proto].
 //
 // Registering a codec with an empty name is a no-op.
 func WithCodec(codec Codec) Option {
@@ -399,13 +384,6 @@ func (o *optionsOption) applyToHandler(config *handlerConfig) {
 
 func withProtoBinaryCodec() Option {
 	return WithCodec(&protoBinaryCodec{})
-}
-
-func withProtoJSONCodecs() HandlerOption {
-	return WithHandlerOptions(
-		WithCodec(&protoJSONCodec{codecNameJSON}),
-		WithCodec(&protoJSONCodec{codecNameJSONCharsetUTF8}),
-	)
 }
 
 type conditionalHandlerOptions struct {
