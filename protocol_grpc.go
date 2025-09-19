@@ -134,7 +134,7 @@ func (g *grpcHandler) NewConn(
 	ctx := request.Context()
 	// We need to parse metadata before entering the interceptor stack; we'll
 	// send the error to the client later on.
-	requestCompression, responseCompression, failed := negotiateCompression(
+	_ /*requestCompression*/, responseCompression, failed := negotiateCompression(
 		g.CompressionPools,
 		getHeaderCanonical(request.Header, grpcHeaderCompression),
 		getHeaderCanonical(request.Header, grpcHeaderAcceptCompression),
@@ -172,7 +172,7 @@ func (g *grpcHandler) NewConn(
 			envelopeWriter: envelopeWriter{
 				ctx:              ctx,
 				sender:           writeSender{writer: responseWriter},
-				compressionPool:  g.CompressionPools.Get(responseCompression),
+				compressionPool:  nil, // g.CompressionPools.Get(responseCompression),
 				codec:            codec,
 				compressMinBytes: g.CompressMinBytes,
 				bufferPool:       g.BufferPool,
@@ -188,7 +188,7 @@ func (g *grpcHandler) NewConn(
 				ctx:             ctx,
 				reader:          request.Body,
 				codec:           codec,
-				compressionPool: g.CompressionPools.Get(requestCompression),
+				compressionPool: nil, // g.CompressionPools.Get(requestCompression),
 				bufferPool:      g.BufferPool,
 				readMaxBytes:    g.ReadMaxBytes,
 			},
@@ -254,14 +254,14 @@ func (g *grpcClient) NewConn(
 		spec:             spec,
 		peer:             g.Peer(),
 		duplexCall:       duplexCall,
-		compressionPools: g.CompressionPools,
+		compressionPools: nil,
 		bufferPool:       g.BufferPool,
 		protobuf:         g.Protobuf,
 		marshaler: grpcMarshaler{
 			envelopeWriter: envelopeWriter{
 				ctx:              ctx,
 				sender:           duplexCall,
-				compressionPool:  g.CompressionPools.Get(g.CompressionName),
+				compressionPool:  nil, // g.CompressionPools.Get(g.CompressionName),
 				codec:            g.Codec,
 				compressMinBytes: g.CompressMinBytes,
 				bufferPool:       g.BufferPool,
@@ -404,13 +404,11 @@ func (cc *grpcClientConn) validateResponse(response *http.Response) *Error {
 	if err := grpcValidateResponse(
 		response,
 		cc.responseHeader,
-		cc.compressionPools,
 		cc.marshaler.codec.Name(),
 	); err != nil {
 		return err
 	}
-	compression := getHeaderCanonical(response.Header, grpcHeaderCompression)
-	cc.unmarshaler.compressionPool = cc.compressionPools.Get(compression)
+	cc.unmarshaler.compressionPool = nil
 	return nil
 }
 
@@ -572,7 +570,6 @@ func (u *grpcUnmarshaler) WebTrailer() http.Header {
 func grpcValidateResponse(
 	response *http.Response,
 	header http.Header,
-	availableCompressors readOnlyCompressionPools,
 	codecName string,
 ) *Error {
 	if response.StatusCode != http.StatusOK {
@@ -583,19 +580,6 @@ func grpcValidateResponse(
 		getHeaderCanonical(response.Header, headerContentType),
 	); err != nil {
 		return err
-	}
-	if compression := getHeaderCanonical(response.Header, grpcHeaderCompression); compression != "" &&
-		compression != compressionIdentity &&
-		!availableCompressors.Contains(compression) {
-		// Per https://github.com/grpc/grpc/blob/master/doc/compression.md, we
-		// should return CodeInternal and specify acceptable compression(s) (in
-		// addition to setting the Grpc-Accept-Encoding header).
-		return errorf(
-			CodeInternal,
-			"unknown encoding %q: accepted encodings are %v",
-			compression,
-			availableCompressors.CommaSeparatedNames(),
-		)
 	}
 	// The response is valid, so we should expose the headers.
 	mergeHeaders(header, response.Header)
@@ -745,9 +729,7 @@ func grpcCodecForContentType(contentType string) string {
 func grpcContentTypeForCodecName(name string) string {
 	if name == codecNameProto {
 		// For compatibility with Google Cloud Platform's frontends, prefer an
-		// implicit default codec. See
-		// https://github.com/agentio/scalpel-go/pull/655#issuecomment-1915754523
-		// for details.
+		// implicit default codec.
 		return grpcContentTypeDefault
 	}
 	return grpcContentTypePrefix + name

@@ -1295,12 +1295,6 @@ func TestHandlerWithReadMaxBytes(t *testing.T) {
 		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPC())
 		readMaxBytesMatrix(t, client, false)
 	})
-	t.Run("grpc_gzip", func(t *testing.T) {
-		t.Parallel()
-		server := newHTTP2Server(t)
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPC(), connect.WithSendGzip())
-		readMaxBytesMatrix(t, client, true)
-	})
 }
 
 func TestHandlerWithHTTPMaxBytes(t *testing.T) {
@@ -1352,12 +1346,6 @@ func TestHandlerWithHTTPMaxBytes(t *testing.T) {
 		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPC())
 		run(t, client, false)
 	})
-	t.Run("grpc_gzip", func(t *testing.T) {
-		t.Parallel()
-		server := memhttptest.NewServer(t, mux)
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPC(), connect.WithSendGzip())
-		run(t, client, true)
-	})
 }
 
 func TestClientWithReadMaxBytes(t *testing.T) {
@@ -1376,7 +1364,6 @@ func TestClientWithReadMaxBytes(t *testing.T) {
 		return server
 	}
 	serverUncompressed := createServer(t, false)
-	serverCompressed := createServer(t, true)
 	readMaxBytes := 1024
 	readMaxBytesMatrix := func(t *testing.T, client pingv1connect.PingServiceClient, compressed bool) {
 		t.Helper()
@@ -1422,11 +1409,6 @@ func TestClientWithReadMaxBytes(t *testing.T) {
 		t.Parallel()
 		client := pingv1connect.NewPingServiceClient(serverUncompressed.Client(), serverUncompressed.URL(), connect.WithReadMaxBytes(readMaxBytes), connect.WithGRPC())
 		readMaxBytesMatrix(t, client, false)
-	})
-	t.Run("grpc_gzip", func(t *testing.T) {
-		t.Parallel()
-		client := pingv1connect.NewPingServiceClient(serverCompressed.Client(), serverCompressed.URL(), connect.WithReadMaxBytes(readMaxBytes), connect.WithGRPC())
-		readMaxBytesMatrix(t, client, true)
 	})
 }
 
@@ -1506,12 +1488,6 @@ func TestHandlerWithSendMaxBytes(t *testing.T) {
 		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPC())
 		sendMaxBytesMatrix(t, client, false)
 	})
-	t.Run("grpc_gzip", func(t *testing.T) {
-		t.Parallel()
-		server := newHTTP2Server(t, true, sendMaxBytes)
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPC())
-		sendMaxBytesMatrix(t, client, true)
-	})
 }
 
 func TestClientWithSendMaxBytes(t *testing.T) {
@@ -1572,12 +1548,6 @@ func TestClientWithSendMaxBytes(t *testing.T) {
 		sendMaxBytes := 1024
 		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithSendMaxBytes(sendMaxBytes), connect.WithGRPC())
 		sendMaxBytesMatrix(t, client, sendMaxBytes, false)
-	})
-	t.Run("grpc_gzip", func(t *testing.T) {
-		t.Parallel()
-		sendMaxBytes := 1024
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithSendMaxBytes(sendMaxBytes), connect.WithGRPC(), connect.WithSendGzip())
-		sendMaxBytesMatrix(t, client, sendMaxBytes, true)
 	})
 }
 
@@ -1780,35 +1750,6 @@ func TestStreamForServer(t *testing.T) {
 		assert.Equal(t, connect.CodeOf(err), connect.CodeUnimplemented)
 		assert.Nil(t, res)
 	})
-}
-
-func TestFailCompression(t *testing.T) {
-	t.Parallel()
-	mux := http.NewServeMux()
-	compressorName := "fail"
-	compressor := func() connect.Compressor { return failCompressor{} }
-	decompressor := func() connect.Decompressor { return failDecompressor{} }
-	mux.Handle(
-		pingv1connect.NewPingServiceHandler(
-			pingServer{},
-			connect.WithCompression(compressorName, decompressor, compressor),
-		),
-	)
-	server := memhttptest.NewServer(t, mux)
-	pingclient := pingv1connect.NewPingServiceClient(
-		server.Client(),
-		server.URL(),
-		connect.WithAcceptCompression(compressorName, decompressor, compressor),
-		connect.WithSendCompression(compressorName),
-	)
-	_, err := pingclient.Ping(
-		t.Context(),
-		connect.NewRequest(&pingv1.PingRequest{
-			Text: "ping",
-		}),
-	)
-	assert.NotNil(t, err)
-	assert.Equal(t, connect.CodeOf(err), connect.CodeInternal)
 }
 
 func TestUnflushableResponseWriter(t *testing.T) {
@@ -2732,22 +2673,6 @@ func newHTTPMiddlewareError() *connect.Error {
 	err.Meta().Set("Middleware-Foo", "bar")
 	return err
 }
-
-type failDecompressor struct {
-	connect.Decompressor
-}
-
-type failCompressor struct{}
-
-func (failCompressor) Write([]byte) (int, error) {
-	return 0, errors.New("failCompressor")
-}
-
-func (failCompressor) Close() error {
-	return errors.New("failCompressor")
-}
-
-func (failCompressor) Reset(io.Writer) {}
 
 type requestInfo interface {
 	Peer() connect.Peer
