@@ -15,9 +15,7 @@
 package scalpel
 
 import (
-	"compress/gzip"
 	"context"
-	"io"
 	"net/http"
 )
 
@@ -27,33 +25,6 @@ import (
 // any [Option] is also a valid ClientOption.
 type ClientOption interface {
 	applyToClient(*clientConfig)
-}
-
-// WithAcceptCompression makes a compression algorithm available to a client.
-// Clients ask servers to compress responses using any of the registered
-// algorithms. The first registered algorithm is treated as the least
-// preferred, and the last registered algorithm is the most preferred.
-//
-// It's safe to use this option liberally: servers will ignore any
-// compression algorithms they don't support. To compress requests, pair this
-// option with [WithSendCompression]. To remove support for a
-// previously-registered compression algorithm, use WithAcceptCompression with
-// nil decompressor and compressor constructors.
-//
-// Clients accept gzipped responses by default, using a compressor backed by the
-// standard library's [gzip] package with the default compression level. Use
-// [WithSendGzip] to compress requests with gzip.
-//
-// Calling WithAcceptCompression with an empty name is a no-op.
-func WithAcceptCompression(
-	name string,
-	newDecompressor func() Decompressor,
-	newCompressor func() Compressor,
-) ClientOption {
-	return &compressionOption{
-		Name:            name,
-		CompressionPool: newCompressionPool(newDecompressor, newCompressor),
-	}
 }
 
 // WithClientOptions composes multiple ClientOptions into one.
@@ -75,55 +46,12 @@ func WithProtoJSON() ClientOption {
 	return WithCodec(&protoJSONCodec{codecNameJSON})
 }
 
-// WithSendCompression configures the client to use the specified algorithm to
-// compress request messages. If the algorithm has not been registered using
-// [WithAcceptCompression], the client will return errors at runtime.
-//
-// Because some servers don't support compression, clients default to sending
-// uncompressed requests.
-func WithSendCompression(name string) ClientOption {
-	return &sendCompressionOption{Name: name}
-}
-
-// WithSendGzip configures the client to gzip requests. Since clients have
-// access to a gzip compressor by default, WithSendGzip doesn't require
-// [WithSendCompression].
-//
-// Some servers don't support gzip, so clients default to sending uncompressed
-// requests.
-func WithSendGzip() ClientOption {
-	return WithSendCompression(compressionGzip)
-}
-
 // A HandlerOption configures a [Handler].
 //
 // In addition to any options grouped in the documentation below, remember that
 // any [Option] is also a HandlerOption.
 type HandlerOption interface {
 	applyToHandler(*handlerConfig)
-}
-
-// WithCompression configures handlers to support a compression algorithm.
-// Clients may send messages compressed with that algorithm and/or request
-// compressed responses. The [Compressor] and [Decompressor] produced by the
-// supplied constructors must use the same algorithm. Internally, Connect pools
-// compressors and decompressors.
-//
-// By default, handlers support gzip using the standard library's
-// [compress/gzip] package at the default compression level. To remove support for
-// a previously-registered compression algorithm, use WithCompression with nil
-// decompressor and compressor constructors.
-//
-// Calling WithCompression with an empty name is a no-op.
-func WithCompression(
-	name string,
-	newDecompressor func() Decompressor,
-	newCompressor func() Compressor,
-) HandlerOption {
-	return &compressionOption{
-		Name:            name,
-		CompressionPool: newCompressionPool(newDecompressor, newCompressor),
-	}
 }
 
 // WithHandlerOptions composes multiple HandlerOptions into one.
@@ -211,17 +139,6 @@ func WithResponseInitializer(initializer func(spec Spec, message any) error) Cli
 // Registering a codec with an empty name is a no-op.
 func WithCodec(codec Codec) Option {
 	return &codecOption{Codec: codec}
-}
-
-// WithCompressMinBytes sets a minimum size threshold for compression:
-// regardless of compressor configuration, messages smaller than the configured
-// minimum are sent uncompressed.
-//
-// The default minimum is zero. Setting a minimum compression threshold may
-// improve overall performance, because the CPU cost of compressing very small
-// messages usually isn't worth the small reduction in network I/O.
-func WithCompressMinBytes(minBytes int) Option {
-	return &compressMinBytesOption{Min: minBytes}
 }
 
 // WithReadMaxBytes limits the performance impact of pathologically large
@@ -386,51 +303,6 @@ func (o *codecOption) applyToHandler(config *handlerConfig) {
 	config.Codecs[o.Codec.Name()] = o.Codec
 }
 
-type compressionOption struct {
-	Name            string
-	CompressionPool *compressionPool
-}
-
-func (o *compressionOption) applyToClient(config *clientConfig) {
-	o.apply(&config.CompressionNames, config.CompressionPools)
-}
-
-func (o *compressionOption) applyToHandler(config *handlerConfig) {
-	o.apply(&config.CompressionNames, config.CompressionPools)
-}
-
-func (o *compressionOption) apply(configuredNames *[]string, configuredPools map[string]*compressionPool) {
-	if o.Name == "" {
-		return
-	}
-	if o.CompressionPool == nil {
-		delete(configuredPools, o.Name)
-		var names []string
-		for _, name := range *configuredNames {
-			if name == o.Name {
-				continue
-			}
-			names = append(names, name)
-		}
-		*configuredNames = names
-		return
-	}
-	configuredPools[o.Name] = o.CompressionPool
-	*configuredNames = append(*configuredNames, o.Name)
-}
-
-type compressMinBytesOption struct {
-	Min int
-}
-
-func (o *compressMinBytesOption) applyToClient(config *clientConfig) {
-	config.CompressMinBytes = o.Min
-}
-
-func (o *compressMinBytesOption) applyToHandler(config *handlerConfig) {
-	config.CompressMinBytes = o.Min
-}
-
 type readMaxBytesOption struct {
 	Max int
 }
@@ -522,24 +394,6 @@ func (o *optionsOption) applyToClient(config *clientConfig) {
 func (o *optionsOption) applyToHandler(config *handlerConfig) {
 	for _, option := range o.options {
 		option.applyToHandler(config)
-	}
-}
-
-type sendCompressionOption struct {
-	Name string
-}
-
-func (o *sendCompressionOption) applyToClient(config *clientConfig) {
-	config.RequestCompressionName = o.Name
-}
-
-func withGzip() Option {
-	return &compressionOption{
-		Name: compressionGzip,
-		CompressionPool: newCompressionPool(
-			func() Decompressor { return &gzip.Reader{} },
-			func() Compressor { return gzip.NewWriter(io.Discard) },
-		),
 	}
 }
 

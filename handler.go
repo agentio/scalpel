@@ -363,7 +363,6 @@ func newHandlerConfig(procedure string, streamType StreamType, options []Handler
 	}
 	withProtoBinaryCodec().applyToHandler(&config)
 	withProtoJSONCodecs().applyToHandler(&config)
-	withGzip().applyToHandler(&config)
 	for _, opt := range options {
 		opt.applyToHandler(&config)
 	}

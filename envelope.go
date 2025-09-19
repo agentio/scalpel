@@ -155,26 +155,10 @@ func (w *envelopeWriter) Marshal(message any) *Error {
 // Write writes the enveloped message, compressing as necessary. It doesn't
 // retain any references to the supplied envelope or its underlying data.
 func (w *envelopeWriter) Write(env *envelope) *Error {
-	if env.IsSet(flagEnvelopeCompressed) ||
-		w.compressionPool == nil ||
-		env.Data.Len() < w.compressMinBytes {
-		if w.sendMaxBytes > 0 && env.Data.Len() > w.sendMaxBytes {
-			return errorf(CodeResourceExhausted, "message size %d exceeds sendMaxBytes %d", env.Data.Len(), w.sendMaxBytes)
-		}
-		return w.write(env)
+	if w.sendMaxBytes > 0 && env.Data.Len() > w.sendMaxBytes {
+		return errorf(CodeResourceExhausted, "message size %d exceeds sendMaxBytes %d", env.Data.Len(), w.sendMaxBytes)
 	}
-	data := w.bufferPool.Get()
-	defer w.bufferPool.Put(data)
-	if err := w.compressionPool.Compress(data, env.Data); err != nil {
-		return err
-	}
-	if w.sendMaxBytes > 0 && data.Len() > w.sendMaxBytes {
-		return errorf(CodeResourceExhausted, "compressed message size %d exceeds sendMaxBytes %d", data.Len(), w.sendMaxBytes)
-	}
-	return w.write(&envelope{
-		Data:  data,
-		Flags: env.Flags | flagEnvelopeCompressed,
-	})
+	return w.write(env)
 }
 
 func (w *envelopeWriter) marshalAppend(message any, codec marshalAppender) *Error {
@@ -269,18 +253,6 @@ func (r *envelopeReader) Unmarshal(message any) *Error {
 	}
 
 	data := env.Data
-	if data.Len() > 0 && env.IsSet(flagEnvelopeCompressed) {
-		decompressed := r.bufferPool.Get()
-		defer func() {
-			if decompressed != dontRelease {
-				r.bufferPool.Put(decompressed)
-			}
-		}()
-		if err := r.compressionPool.Decompress(decompressed, data, int64(r.readMaxBytes)); err != nil {
-			return err
-		}
-		data = decompressed
-	}
 
 	if env.Flags != 0 && env.Flags != flagEnvelopeCompressed {
 		// Drain the rest of the stream to ensure there is no extra data.

@@ -134,7 +134,9 @@ func (g *grpcHandler) NewConn(
 	ctx := request.Context()
 	// We need to parse metadata before entering the interceptor stack; we'll
 	// send the error to the client later on.
-	_ /*requestCompression*/, responseCompression, failed := negotiateCompression(
+	_, /*requestCompression*/
+		_, /* reponseCompression */
+		failed := negotiateCompression(
 		g.CompressionPools,
 		getHeaderCanonical(request.Header, grpcHeaderCompression),
 		getHeaderCanonical(request.Header, grpcHeaderAcceptCompression),
@@ -152,10 +154,6 @@ func (g *grpcHandler) NewConn(
 	// skip the normalization in Header.Set.
 	header := responseWriter.Header()
 	header[headerContentType] = []string{getHeaderCanonical(request.Header, headerContentType)}
-	header[grpcHeaderAcceptCompression] = []string{g.CompressionPools.CommaSeparatedNames()}
-	if responseCompression != compressionIdentity {
-		header[grpcHeaderCompression] = []string{responseCompression}
-	}
 
 	codecName := grpcCodecForContentType(getHeaderCanonical(request.Header, headerContentType))
 	codec := g.Codecs.Get(codecName) // handler.go guarantees this is not nil
@@ -223,9 +221,6 @@ func (g *grpcClient) WriteRequestHeader(_ StreamType, header http.Header) {
 	// compress the whole stream. By default, http.Client will ask the server
 	// to gzip the stream if we don't set Accept-Encoding.
 	header["Accept-Encoding"] = []string{compressionIdentity}
-	if g.CompressionName != "" && g.CompressionName != compressionIdentity {
-		header[grpcHeaderCompression] = []string{g.CompressionName}
-	}
 	if acceptCompression := g.CompressionPools.CommaSeparatedNames(); acceptCompression != "" {
 		header[grpcHeaderAcceptCompression] = []string{acceptCompression}
 	}

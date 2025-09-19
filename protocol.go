@@ -279,10 +279,6 @@ func sortedAllowMethodValue(handlers []protocolHandler) string {
 	return strings.Join(allow, ", ")
 }
 
-func isCommaOrSpace(c rune) bool {
-	return c == ',' || c == ' '
-}
-
 func discard(reader io.Reader) (int64, error) {
 	if lr, ok := reader.(*io.LimitedReader); ok {
 		return io.Copy(io.Discard, lr)
@@ -298,7 +294,7 @@ func discard(reader io.Reader) (int64, error) {
 // Content-Encoding and Accept-Encoding headers.
 func negotiateCompression( //nolint:nonamedreturns
 	availableCompressors readOnlyCompressionPools,
-	sent, accept string,
+	sent, _ /*accept*/ string,
 ) (requestCompression, responseCompression string, clientVisibleErr *Error) {
 	requestCompression = compressionIdentity
 	if sent != "" && sent != compressionIdentity {
@@ -319,22 +315,7 @@ func negotiateCompression( //nolint:nonamedreturns
 			)
 		}
 	}
-	// Support asymmetric compression. This logic follows
-	// https://github.com/grpc/grpc/blob/master/doc/compression.md and common
-	// sense.
 	responseCompression = requestCompression
-	// If we're not already planning to compress the response, check whether the
-	// client requested a compression algorithm we support.
-	if responseCompression == compressionIdentity && accept != "" {
-		for _, name := range strings.FieldsFunc(accept, isCommaOrSpace) {
-			if availableCompressors.Contains(name) {
-				// We found a mutually supported compression algorithm. Unlike standard
-				// HTTP, there's no preference weighting, so can bail out immediately.
-				responseCompression = name
-				break
-			}
-		}
-	}
 	return requestCompression, responseCompression, nil
 }
 

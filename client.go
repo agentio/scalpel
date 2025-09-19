@@ -340,7 +340,6 @@ func newClientConfig(rawURL string, options []ClientOption) (*clientConfig, *Err
 		BufferPool:       newBufferPool(),
 	}
 	withProtoBinaryCodec().applyToClient(&config)
-	withGzip().applyToClient(&config)
 	for _, opt := range options {
 		opt.applyToClient(&config)
 	}
@@ -353,11 +352,6 @@ func newClientConfig(rawURL string, options []ClientOption) (*clientConfig, *Err
 func (c *clientConfig) validate() *Error {
 	if c.Codec == nil || c.Codec.Name() == "" {
 		return errorf(CodeUnknown, "no codec configured")
-	}
-	if c.RequestCompressionName != "" && c.RequestCompressionName != compressionIdentity {
-		if _, ok := c.CompressionPools[c.RequestCompressionName]; !ok {
-			return errorf(CodeUnknown, "unknown compression %q", c.RequestCompressionName)
-		}
 	}
 	return nil
 }

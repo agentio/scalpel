@@ -63,7 +63,6 @@ func BenchmarkConnect(b *testing.B) {
 			client := pingv1connect.NewPingServiceClient(
 				httpClient,
 				server.URL,
-				connect.WithSendGzip(),
 				connect.WithClientOptions(client.opts...),
 			)
 

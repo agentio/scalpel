@@ -16,7 +16,6 @@ package scalpel_test
 
 import (
 	"bytes"
-	"compress/flate"
 	"compress/gzip"
 	"context"
 	"crypto/tls"
@@ -24,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	rand "math/rand/v2"
 	"net"
 	"net/http"
@@ -661,14 +659,13 @@ func TestServer(t *testing.T) {
 				run(t, connect.WithGRPC())
 			})
 			t.Run("proto_gzip", func(t *testing.T) {
-				run(t, connect.WithGRPC(), connect.WithSendGzip())
+				run(t, connect.WithGRPC())
 			})
 			t.Run("json_gzip", func(t *testing.T) {
 				run(
 					t,
 					connect.WithGRPC(),
 					connect.WithProtoJSON(),
-					connect.WithSendGzip(),
 				)
 			})
 		})
@@ -1116,94 +1113,6 @@ func TestUnavailableIfHostInvalid(t *testing.T) {
 	assert.Equal(t, connect.CodeOf(err), connect.CodeUnavailable)
 }
 
-func TestCompressMinBytes(t *testing.T) {
-	t.Parallel()
-	mux := http.NewServeMux()
-	mux.Handle(pingv1connect.NewPingServiceHandler(
-		pingServer{},
-		connect.WithCompressMinBytes(8),
-	))
-	server := memhttptest.NewServer(t, mux)
-	client := server.Client()
-
-	getPingResponse := func(t *testing.T, pingText string) *http.Response {
-		t.Helper()
-		request := &pingv1.PingRequest{Text: pingText}
-		requestBytes, err := proto.Marshal(request)
-		assert.Nil(t, err)
-		req, err := http.NewRequestWithContext(
-			t.Context(),
-			http.MethodPost,
-			server.URL()+pingv1connect.PingServicePingProcedure,
-			bytes.NewReader(requestBytes),
-		)
-		assert.Nil(t, err)
-		req.Header.Set("Content-Type", "application/proto")
-		response, err := client.Do(req)
-		assert.Nil(t, err)
-		t.Cleanup(func() {
-			assert.Nil(t, response.Body.Close())
-		})
-		return response
-	}
-
-	t.Run("response_uncompressed", func(t *testing.T) {
-		t.Parallel()
-		assert.False(t, getPingResponse(t, "ping").Uncompressed) //nolint:bodyclose
-	})
-}
-
-func TestCustomCompression(t *testing.T) {
-	t.Parallel()
-	mux := http.NewServeMux()
-	compressionName := "deflate"
-	decompressor := func() connect.Decompressor {
-		// Need to instantiate with a reader - before decompressing Reset(io.Reader) is called
-		return newDeflateReader(strings.NewReader(""))
-	}
-	compressor := func() connect.Compressor {
-		w, err := flate.NewWriter(&strings.Builder{}, flate.DefaultCompression)
-		if err != nil {
-			t.Fatalf("failed to create flate writer: %v", err)
-		}
-		return w
-	}
-	mux.Handle(pingv1connect.NewPingServiceHandler(
-		pingServer{},
-		connect.WithCompression(compressionName, decompressor, compressor),
-	))
-	server := memhttptest.NewServer(t, mux)
-	client := pingv1connect.NewPingServiceClient(server.Client(),
-		server.URL(),
-		connect.WithAcceptCompression(compressionName, decompressor, compressor),
-		connect.WithSendCompression(compressionName),
-	)
-	request := &pingv1.PingRequest{Text: "testing 1..2..3.."}
-	response, err := client.Ping(t.Context(), connect.NewRequest(request))
-	assert.Nil(t, err)
-	assert.Equal(t, response.Msg, &pingv1.PingResponse{Text: request.GetText()})
-}
-
-func TestClientWithoutGzipSupport(t *testing.T) {
-	// See https://agentio/scalpel/pull/349 for why we want to
-	// support this. TL;DR is that Microsoft's dapr sidecar can't handle
-	// asymmetric compression.
-	t.Parallel()
-	mux := http.NewServeMux()
-	mux.Handle(pingv1connect.NewPingServiceHandler(pingServer{}))
-	server := memhttptest.NewServer(t, mux)
-	client := pingv1connect.NewPingServiceClient(server.Client(),
-		server.URL(),
-		connect.WithAcceptCompression("gzip", nil, nil),
-		connect.WithSendGzip(),
-	)
-	request := &pingv1.PingRequest{Text: "gzip me!"}
-	_, err := client.Ping(t.Context(), connect.NewRequest(request))
-	assert.NotNil(t, err)
-	assert.Equal(t, connect.CodeOf(err), connect.CodeUnknown)
-	assert.True(t, strings.Contains(err.Error(), "unknown compression"))
-}
-
 func TestInterceptorReturnsWrongType(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
@@ -1350,16 +1259,10 @@ func TestHandlerWithHTTPMaxBytes(t *testing.T) {
 
 func TestClientWithReadMaxBytes(t *testing.T) {
 	t.Parallel()
-	createServer := func(tb testing.TB, enableCompression bool) *memhttp.Server {
+	createServer := func(tb testing.TB, _ bool) *memhttp.Server {
 		tb.Helper()
 		mux := http.NewServeMux()
-		var compressionOption connect.HandlerOption
-		if enableCompression {
-			compressionOption = connect.WithCompressMinBytes(1)
-		} else {
-			compressionOption = connect.WithCompressMinBytes(math.MaxInt)
-		}
-		mux.Handle(pingv1connect.NewPingServiceHandler(pingServer{}, compressionOption))
+		mux.Handle(pingv1connect.NewPingServiceHandler(pingServer{}))
 		server := memhttptest.NewServer(t, mux)
 		return server
 	}
@@ -1466,15 +1369,10 @@ func TestHandlerWithSendMaxBytes(t *testing.T) {
 			}
 		})
 	}
-	newHTTP2Server := func(t *testing.T, compressed bool, sendMaxBytes int) *memhttp.Server {
+	newHTTP2Server := func(t *testing.T, sendMaxBytes int) *memhttp.Server {
 		t.Helper()
 		mux := http.NewServeMux()
 		options := []connect.HandlerOption{connect.WithSendMaxBytes(sendMaxBytes)}
-		if compressed {
-			options = append(options, connect.WithCompressMinBytes(1))
-		} else {
-			options = append(options, connect.WithCompressMinBytes(math.MaxInt))
-		}
 		mux.Handle(pingv1connect.NewPingServiceHandler(
 			pingServer{},
 			options...,
@@ -1484,7 +1382,7 @@ func TestHandlerWithSendMaxBytes(t *testing.T) {
 	}
 	t.Run("grpc", func(t *testing.T) {
 		t.Parallel()
-		server := newHTTP2Server(t, false, sendMaxBytes)
+		server := newHTTP2Server(t, sendMaxBytes)
 		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithGRPC())
 		sendMaxBytesMatrix(t, client, false)
 	})
@@ -2602,31 +2500,6 @@ func (p pingServerSimple) CumSum(
 ) error {
 	return handleCumSum(ctx, stream, p.checkMetadata)
 }
-
-type deflateReader struct {
-	r io.ReadCloser
-}
-
-func newDeflateReader(r io.Reader) *deflateReader {
-	return &deflateReader{r: flate.NewReader(r)}
-}
-
-func (d *deflateReader) Read(p []byte) (int, error) {
-	return d.r.Read(p)
-}
-
-func (d *deflateReader) Close() error {
-	return d.r.Close()
-}
-
-func (d *deflateReader) Reset(reader io.Reader) error {
-	if resetter, ok := d.r.(flate.Resetter); ok {
-		return resetter.Reset(reader, nil)
-	}
-	return errors.New("flate reader should implement flate.Resetter")
-}
-
-var _ connect.Decompressor = (*deflateReader)(nil)
 
 type trimTrailerWriter struct {
 	w http.ResponseWriter

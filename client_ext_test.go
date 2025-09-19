@@ -46,49 +46,6 @@ import (
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
-func TestNewClient_InitFailure(t *testing.T) {
-	t.Parallel()
-	client := pingv1connect.NewPingServiceClient(
-		http.DefaultClient,
-		"http://127.0.0.1:8080",
-		// This triggers an error during initialization, so each call will short circuit returning an error.
-		connect.WithSendCompression("invalid"),
-	)
-	validateExpectedError := func(t *testing.T, err error) {
-		t.Helper()
-		assert.NotNil(t, err)
-		var connectErr *connect.Error
-		assert.True(t, errors.As(err, &connectErr))
-		assert.Equal(t, connectErr.Message(), `unknown compression "invalid"`)
-	}
-
-	t.Run("unary", func(t *testing.T) {
-		t.Parallel()
-		_, err := client.Ping(t.Context(), connect.NewRequest(&pingv1.PingRequest{}))
-		validateExpectedError(t, err)
-	})
-
-	t.Run("bidi", func(t *testing.T) {
-		t.Parallel()
-		bidiStream := client.CumSum(t.Context())
-		err := bidiStream.Send(&pingv1.CumSumRequest{})
-		validateExpectedError(t, err)
-	})
-
-	t.Run("client_stream", func(t *testing.T) {
-		t.Parallel()
-		clientStream := client.Sum(t.Context())
-		err := clientStream.Send(&pingv1.SumRequest{})
-		validateExpectedError(t, err)
-	})
-
-	t.Run("server_stream", func(t *testing.T) {
-		t.Parallel()
-		_, err := client.CountUp(t.Context(), connect.NewRequest(&pingv1.CountUpRequest{Number: 3}))
-		validateExpectedError(t, err)
-	})
-}
-
 func TestClientPeer(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
@@ -567,8 +524,8 @@ func TestClientDeadlineHandling(t *testing.T) {
 		}
 		extraField = protowire.AppendBytes(extraField, extraData)
 
-		clientConnect := pingv1connect.NewPingServiceClient(svr.Client(), svr.URL, connect.WithSendGzip())
-		clientGRPC := pingv1connect.NewPingServiceClient(svr.Client(), svr.URL, connect.WithSendGzip(), connect.WithGRPC())
+		clientConnect := pingv1connect.NewPingServiceClient(svr.Client(), svr.URL)
+		clientGRPC := pingv1connect.NewPingServiceClient(svr.Client(), svr.URL, connect.WithGRPC())
 		var count atomic.Int32
 		testClientDeadlineBruteForceLoop(t,
 			20*time.Second, 200, runtime.GOMAXPROCS(0),
