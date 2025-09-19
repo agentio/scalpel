@@ -77,7 +77,6 @@ type protocolHandlerParams struct {
 	ReadMaxBytes                 int
 	SendMaxBytes                 int
 	RequireConnectProtocolHeader bool
-	IdempotencyLevel             IdempotencyLevel
 }
 
 // Handler is the server side of a protocol. HTTP handlers typically support

@@ -224,7 +224,6 @@ func TestDynamicClient(t *testing.T) {
 			server.Client(),
 			server.URL()+"/connect.ping.v1.PingService/Ping",
 			connect.WithSchema(methodDesc),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithResponseInitializer(initializer),
 		)
 		msg := dynamicpb.NewMessage(methodDesc.Input())
@@ -415,7 +414,6 @@ func TestDynamicClient(t *testing.T) {
 			server.Client(),
 			server.URL()+"/connect.ping.v1.PingService/Ping",
 			connect.WithSchema(methodDesc),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithResponseInitializer(
 				func(spec connect.Spec, msg any) error {
 					assert.NotNil(t, spec)

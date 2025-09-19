@@ -164,7 +164,6 @@ func TestDynamicHandler(t *testing.T) {
 				"/connect.ping.v1.PingService/Ping",
 				dynamicPing,
 				connect.WithSchema(methodDesc),
-				connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 				connect.WithRequestInitializer(initializer),
 			),
 		)
@@ -378,7 +377,6 @@ func TestDynamicHandler(t *testing.T) {
 				"/connect.ping.v1.PingService/Ping",
 				dynamicPing,
 				connect.WithSchema(methodDesc),
-				connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 				connect.WithRequestInitializer(
 					func(spec connect.Spec, msg any) error {
 						assert.NotNil(t, spec)

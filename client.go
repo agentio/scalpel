@@ -293,19 +293,18 @@ func (c *Client[Req, Res]) newConn(ctx context.Context, streamType StreamType, o
 }
 
 type clientConfig struct {
-	URL              *url.URL
-	Protocol         protocol
-	Procedure        string
-	Schema           any
-	Initializer      maybeInitializer
-	Codec            Codec
-	BufferPool       *bufferPool
-	ReadMaxBytes     int
-	SendMaxBytes     int
-	EnableGet        bool
-	GetURLMaxBytes   int
-	GetUseFallback   bool
-	IdempotencyLevel IdempotencyLevel
+	URL            *url.URL
+	Protocol       protocol
+	Procedure      string
+	Schema         any
+	Initializer    maybeInitializer
+	Codec          Codec
+	BufferPool     *bufferPool
+	ReadMaxBytes   int
+	SendMaxBytes   int
+	EnableGet      bool
+	GetURLMaxBytes int
+	GetUseFallback bool
 }
 
 func newClientConfig(rawURL string, options []ClientOption) (*clientConfig, *Error) {
@@ -346,11 +345,10 @@ func (c *clientConfig) protobuf() Codec {
 
 func (c *clientConfig) newSpec(t StreamType) Spec {
 	return Spec{
-		StreamType:       t,
-		Procedure:        c.Procedure,
-		Schema:           c.Schema,
-		IsClient:         true,
-		IdempotencyLevel: c.IdempotencyLevel,
+		StreamType: t,
+		Procedure:  c.Procedure,
+		Schema:     c.Schema,
+		IsClient:   true,
 	}
 }
 

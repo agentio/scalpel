@@ -338,14 +338,6 @@ func generateClientImplementation(g *protogen.GeneratedFile, file *protogen.File
 		g.P("httpClient,")
 		g.P(`baseURL + `, procedureConstName(method), `,`)
 		g.P(connectPackage.Ident("WithSchema"), "(", procedureVarMethodDescriptor(method), "),")
-		idempotency := methodIdempotency(method)
-		switch idempotency {
-		case connect.IdempotencyNoSideEffects:
-			g.P(connectPackage.Ident("WithIdempotency"), "(", connectPackage.Ident("IdempotencyNoSideEffects"), "),")
-		case connect.IdempotencyIdempotent:
-			g.P(connectPackage.Ident("WithIdempotency"), "(", connectPackage.Ident("IdempotencyIdempotent"), "),")
-		case connect.IdempotencyUnknown:
-		}
 		g.P(connectPackage.Ident("WithClientOptions"), "(opts...),")
 		g.P("),")
 	}
@@ -500,7 +492,6 @@ func generateServerConstructor(g *protogen.GeneratedFile, file *protogen.File, s
 	for _, method := range service.Methods {
 		isStreamingServer := method.Desc.IsStreamingServer()
 		isStreamingClient := method.Desc.IsStreamingClient()
-		idempotency := methodIdempotency(method)
 		switch {
 		case isStreamingClient && !isStreamingServer:
 			if simple {
@@ -526,13 +517,6 @@ func generateServerConstructor(g *protogen.GeneratedFile, file *protogen.File, s
 		g.P(procedureConstName(method), `,`)
 		g.P("svc.", method.GoName, ",")
 		g.P(connectPackage.Ident("WithSchema"), "(", procedureVarMethodDescriptor(method), "),")
-		switch idempotency {
-		case connect.IdempotencyNoSideEffects:
-			g.P(connectPackage.Ident("WithIdempotency"), "(", connectPackage.Ident("IdempotencyNoSideEffects"), "),")
-		case connect.IdempotencyIdempotent:
-			g.P(connectPackage.Ident("WithIdempotency"), "(", connectPackage.Ident("IdempotencyIdempotent"), "),")
-		case connect.IdempotencyUnknown:
-		}
 		g.P(connectPackage.Ident("WithHandlerOptions"), "(opts...),")
 		g.P(")")
 	}
@@ -659,22 +643,6 @@ func isDeprecatedService(service *protogen.Service) bool {
 func isDeprecatedMethod(method *protogen.Method) bool {
 	methodOptions, ok := method.Desc.Options().(*descriptorpb.MethodOptions)
 	return ok && methodOptions.GetDeprecated()
-}
-
-func methodIdempotency(method *protogen.Method) connect.IdempotencyLevel {
-	methodOptions, ok := method.Desc.Options().(*descriptorpb.MethodOptions)
-	if !ok {
-		return connect.IdempotencyUnknown
-	}
-	switch methodOptions.GetIdempotencyLevel() {
-	case descriptorpb.MethodOptions_NO_SIDE_EFFECTS:
-		return connect.IdempotencyNoSideEffects
-	case descriptorpb.MethodOptions_IDEMPOTENT:
-		return connect.IdempotencyIdempotent
-	case descriptorpb.MethodOptions_IDEMPOTENCY_UNKNOWN:
-		return connect.IdempotencyUnknown
-	}
-	return connect.IdempotencyUnknown
 }
 
 // Raggedy comments in the generated code are driving me insane. This

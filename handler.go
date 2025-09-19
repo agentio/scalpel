@@ -337,7 +337,6 @@ type handlerConfig struct {
 	Schema                       any
 	Initializer                  maybeInitializer
 	RequireConnectProtocolHeader bool
-	IdempotencyLevel             IdempotencyLevel
 	BufferPool                   *bufferPool
 	ReadMaxBytes                 int
 	SendMaxBytes                 int
@@ -361,10 +360,9 @@ func newHandlerConfig(procedure string, streamType StreamType, options []Handler
 
 func (c *handlerConfig) newSpec() Spec {
 	return Spec{
-		Procedure:        c.Procedure,
-		Schema:           c.Schema,
-		StreamType:       c.StreamType,
-		IdempotencyLevel: c.IdempotencyLevel,
+		Procedure:  c.Procedure,
+		Schema:     c.Schema,
+		StreamType: c.StreamType,
 	}
 }
 
@@ -382,7 +380,6 @@ func (c *handlerConfig) newProtocolHandlers() []protocolHandler {
 			ReadMaxBytes:                 c.ReadMaxBytes,
 			SendMaxBytes:                 c.SendMaxBytes,
 			RequireConnectProtocolHeader: c.RequireConnectProtocolHeader,
-			IdempotencyLevel:             c.IdempotencyLevel,
 		}))
 	}
 	return handlers

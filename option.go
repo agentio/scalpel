@@ -132,20 +132,6 @@ func WithSendMaxBytes(maxBytes int) Option {
 	return &sendMaxBytesOption{Max: maxBytes}
 }
 
-// WithIdempotency declares the idempotency of the procedure. This can determine
-// whether a procedure call can safely be retried, and may affect which request
-// modalities are allowed for a given procedure call.
-//
-// In most cases, you should not need to manually set this. It is normally set
-// by the code generator for your schema. For protobuf schemas, it can be set like this:
-//
-//	rpc Ping(PingRequest) returns (PingResponse) {
-//	  option idempotency_level = NO_SIDE_EFFECTS;
-//	}
-func WithIdempotency(idempotencyLevel IdempotencyLevel) Option {
-	return &idempotencyOption{idempotencyLevel: idempotencyLevel}
-}
-
 // WithOptions composes multiple Options into one.
 func WithOptions(options ...Option) Option {
 	return &optionsOption{options}
@@ -246,18 +232,6 @@ func (o *handlerOptionsOption) applyToHandler(config *handlerConfig) {
 	for _, option := range o.options {
 		option.applyToHandler(config)
 	}
-}
-
-type idempotencyOption struct {
-	idempotencyLevel IdempotencyLevel
-}
-
-func (o *idempotencyOption) applyToClient(config *clientConfig) {
-	config.IdempotencyLevel = o.idempotencyLevel
-}
-
-func (o *idempotencyOption) applyToHandler(config *handlerConfig) {
-	config.IdempotencyLevel = o.idempotencyLevel
 }
 
 type grpcOption struct {

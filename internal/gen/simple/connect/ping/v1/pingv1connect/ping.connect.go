@@ -92,7 +92,6 @@ func NewPingServiceClient(httpClient scalpel.HTTPClient, baseURL string, opts ..
 			httpClient,
 			baseURL+PingServicePingProcedure,
 			scalpel.WithSchema(pingServiceMethods.ByName("Ping")),
-			scalpel.WithIdempotency(scalpel.IdempotencyNoSideEffects),
 			scalpel.WithClientOptions(opts...),
 		),
 		fail: scalpel.NewClient[v1.FailRequest, v1.FailResponse](
@@ -188,7 +187,6 @@ func NewPingServiceHandler(svc PingServiceHandler, opts ...scalpel.HandlerOption
 		PingServicePingProcedure,
 		svc.Ping,
 		scalpel.WithSchema(pingServiceMethods.ByName("Ping")),
-		scalpel.WithIdempotency(scalpel.IdempotencyNoSideEffects),
 		scalpel.WithHandlerOptions(opts...),
 	)
 	pingServiceFailHandler := scalpel.NewUnaryHandlerSimple(
