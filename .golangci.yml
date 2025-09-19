@@ -128,3 +128,6 @@ issues:
     - linters: [gosec]
       text: "^G115: integer overflow conversion"
       path: ".*_test.go"
+    # Don't complain about duplicated code in tests
+    - linters: [dupl]
+      path: "connect_ext_test.go"

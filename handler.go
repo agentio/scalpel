@@ -336,10 +336,7 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 }
 
 type handlerConfig struct {
-	CompressionPools             map[string]*compressionPool
-	CompressionNames             []string
 	Codecs                       map[string]Codec
-	CompressMinBytes             int
 	Interceptor                  Interceptor
 	Procedure                    string
 	Schema                       any
@@ -355,11 +352,10 @@ type handlerConfig struct {
 func newHandlerConfig(procedure string, streamType StreamType, options []HandlerOption) *handlerConfig {
 	protoPath := extractProtoPath(procedure)
 	config := handlerConfig{
-		Procedure:        protoPath,
-		CompressionPools: make(map[string]*compressionPool),
-		Codecs:           make(map[string]Codec),
-		BufferPool:       newBufferPool(),
-		StreamType:       streamType,
+		Procedure:  protoPath,
+		Codecs:     make(map[string]Codec),
+		BufferPool: newBufferPool(),
+		StreamType: streamType,
 	}
 	withProtoBinaryCodec().applyToHandler(&config)
 	withProtoJSONCodecs().applyToHandler(&config)
@@ -384,16 +380,10 @@ func (c *handlerConfig) newProtocolHandlers() []protocolHandler {
 	}
 	handlers := make([]protocolHandler, 0, len(protocols))
 	codecs := newReadOnlyCodecs(c.Codecs)
-	compressors := newReadOnlyCompressionPools(
-		c.CompressionPools,
-		c.CompressionNames,
-	)
 	for _, protocol := range protocols {
 		handlers = append(handlers, protocol.NewHandler(&protocolHandlerParams{
 			Spec:                         c.newSpec(),
 			Codecs:                       codecs,
-			CompressionPools:             compressors,
-			CompressMinBytes:             c.CompressMinBytes,
 			BufferPool:                   c.BufferPool,
 			ReadMaxBytes:                 c.ReadMaxBytes,
 			SendMaxBytes:                 c.SendMaxBytes,

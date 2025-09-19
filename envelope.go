@@ -125,13 +125,11 @@ func (e *envelope) Len() int {
 }
 
 type envelopeWriter struct {
-	ctx              context.Context //nolint:containedctx
-	sender           messageSender
-	codec            Codec
-	compressMinBytes int
-	compressionPool  *compressionPool
-	bufferPool       *bufferPool
-	sendMaxBytes     int
+	ctx          context.Context //nolint:containedctx
+	sender       messageSender
+	codec        Codec
+	bufferPool   *bufferPool
+	sendMaxBytes int
 }
 
 func (w *envelopeWriter) Marshal(message any) *Error {
@@ -211,14 +209,13 @@ func (w *envelopeWriter) write(env *envelope) *Error {
 }
 
 type envelopeReader struct {
-	ctx             context.Context //nolint:containedctx
-	reader          io.Reader
-	bytesRead       int64 // detect trailers-only gRPC responses
-	codec           Codec
-	last            envelope
-	compressionPool *compressionPool
-	bufferPool      *bufferPool
-	readMaxBytes    int
+	ctx          context.Context //nolint:containedctx
+	reader       io.Reader
+	bytesRead    int64 // detect trailers-only gRPC responses
+	codec        Codec
+	last         envelope
+	bufferPool   *bufferPool
+	readMaxBytes int
 }
 
 func (r *envelopeReader) Unmarshal(message any) *Error {
@@ -233,7 +230,7 @@ func (r *envelopeReader) Unmarshal(message any) *Error {
 	env := &envelope{Data: buffer}
 	err := r.Read(env)
 	switch {
-	case err == nil && env.IsSet(flagEnvelopeCompressed) && r.compressionPool == nil:
+	case err == nil && env.IsSet(flagEnvelopeCompressed):
 		return errorf(
 			CodeInternal,
 			"protocol error: sent compressed message without compression support",

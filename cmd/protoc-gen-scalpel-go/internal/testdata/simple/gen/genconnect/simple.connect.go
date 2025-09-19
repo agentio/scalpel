@@ -148,8 +148,7 @@ type TestServiceHandler interface {
 // NewTestServiceHandler builds an HTTP handler from the service implementation. It returns the path
 // on which to mount the handler and the handler itself.
 //
-// By default, handlers support the gRPC protocol with the binary Protobuf codecs. They also support
-// gzip compression.
+// By default, handlers support the gRPC protocol with the binary Protobuf codecs.
 func NewTestServiceHandler(svc TestServiceHandler, opts ...scalpel.HandlerOption) (string, http.Handler) {
 	testServiceMethods := gen.File_simple_proto.Services().ByName("TestService").Methods()
 	testServiceMethodHandler := scalpel.NewUnaryHandlerSimple(

@@ -488,7 +488,7 @@ func generateServerConstructor(g *protogen.GeneratedFile, file *protogen.File, s
 		" It returns the path on which to mount the handler and the handler itself.")
 	g.P("//")
 	wrapComments(g, "By default, handlers support the gRPC protocol with ",
-		"the binary Protobuf codecs. They also support gzip compression.")
+		"the binary Protobuf codecs.")
 	if isDeprecatedService(service) {
 		g.P("//")
 		deprecated(g)

@@ -181,8 +181,7 @@ type PingServiceHandler interface {
 // NewPingServiceHandler builds an HTTP handler from the service implementation. It returns the path
 // on which to mount the handler and the handler itself.
 //
-// By default, handlers support the gRPC protocol with the binary Protobuf codecs. They also support
-// gzip compression.
+// By default, handlers support the gRPC protocol with the binary Protobuf codecs.
 func NewPingServiceHandler(svc PingServiceHandler, opts ...scalpel.HandlerOption) (string, http.Handler) {
 	pingServiceMethods := v1.File_connect_ping_v1_ping_proto.Services().ByName("PingService").Methods()
 	pingServicePingHandler := scalpel.NewUnaryHandlerSimple(

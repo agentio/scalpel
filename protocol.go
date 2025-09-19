@@ -73,8 +73,6 @@ type protocol interface {
 type protocolHandlerParams struct {
 	Spec                         Spec
 	Codecs                       readOnlyCodecs
-	CompressionPools             readOnlyCompressionPools
-	CompressMinBytes             int
 	BufferPool                   *bufferPool
 	ReadMaxBytes                 int
 	SendMaxBytes                 int
@@ -114,18 +112,15 @@ type protocolHandler interface {
 // Protocol implementations should take care to use the supplied Spec rather
 // than constructing their own, since new fields may have been added.
 type protocolClientParams struct {
-	CompressionName  string
-	CompressionPools readOnlyCompressionPools
-	Codec            Codec
-	CompressMinBytes int
-	HTTPClient       HTTPClient
-	URL              *url.URL
-	BufferPool       *bufferPool
-	ReadMaxBytes     int
-	SendMaxBytes     int
-	EnableGet        bool
-	GetURLMaxBytes   int
-	GetUseFallback   bool
+	Codec          Codec
+	HTTPClient     HTTPClient
+	URL            *url.URL
+	BufferPool     *bufferPool
+	ReadMaxBytes   int
+	SendMaxBytes   int
+	EnableGet      bool
+	GetURLMaxBytes int
+	GetUseFallback bool
 	// The gRPC family of protocols always needs access to a Protobuf codec to
 	// marshal and unmarshal errors.
 	Protobuf Codec
@@ -287,36 +282,6 @@ func discard(reader io.Reader) (int64, error) {
 	// we're willing to do here.
 	lr := &io.LimitedReader{R: reader, N: discardLimit}
 	return io.Copy(io.Discard, lr)
-}
-
-// negotiateCompression determines and validates the request compression and
-// response compression using the available compressors and protocol-specific
-// Content-Encoding and Accept-Encoding headers.
-func negotiateCompression( //nolint:nonamedreturns
-	availableCompressors readOnlyCompressionPools,
-	sent, _ /*accept*/ string,
-) (requestCompression, responseCompression string, clientVisibleErr *Error) {
-	requestCompression = compressionIdentity
-	if sent != "" && sent != compressionIdentity {
-		// We default to identity, so we only care if the client sends something
-		// other than the empty string or compressIdentity.
-		if availableCompressors.Contains(sent) {
-			requestCompression = sent
-		} else {
-			// To comply with
-			// https://github.com/grpc/grpc/blob/master/doc/compression.md and the
-			// Connect protocol, we should return CodeUnimplemented and specify
-			// acceptable compression(s) (in addition to setting the a
-			// protocol-specific accept-encoding header).
-			return "", "", errorf(
-				CodeUnimplemented,
-				"unknown compression %q: supported encodings are %v",
-				sent, availableCompressors.CommaSeparatedNames(),
-			)
-		}
-	}
-	responseCompression = requestCompression
-	return requestCompression, responseCompression, nil
 }
 
 // checkServerStreamsCanFlush ensures that bidi and server streaming handlers

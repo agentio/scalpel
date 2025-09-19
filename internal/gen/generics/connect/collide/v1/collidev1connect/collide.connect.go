@@ -93,8 +93,7 @@ type CollideServiceHandler interface {
 // NewCollideServiceHandler builds an HTTP handler from the service implementation. It returns the
 // path on which to mount the handler and the handler itself.
 //
-// By default, handlers support the gRPC protocol with the binary Protobuf codecs. They also support
-// gzip compression.
+// By default, handlers support the gRPC protocol with the binary Protobuf codecs.
 func NewCollideServiceHandler(svc CollideServiceHandler, opts ...scalpel.HandlerOption) (string, http.Handler) {
 	collideServiceMethods := v1.File_connect_collide_v1_collide_proto.Services().ByName("CollideService").Methods()
 	collideServiceImportHandler := scalpel.NewUnaryHandler(

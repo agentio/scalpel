@@ -48,22 +48,16 @@ func NewClient[Req, Res any](httpClient HTTPClient, url string, options ...Clien
 	client.config = config
 	protocolClient, protocolErr := client.config.Protocol.NewClient(
 		&protocolClientParams{
-			CompressionName: config.RequestCompressionName,
-			CompressionPools: newReadOnlyCompressionPools(
-				config.CompressionPools,
-				config.CompressionNames,
-			),
-			Codec:            config.Codec,
-			Protobuf:         config.protobuf(),
-			CompressMinBytes: config.CompressMinBytes,
-			HTTPClient:       httpClient,
-			URL:              config.URL,
-			BufferPool:       config.BufferPool,
-			ReadMaxBytes:     config.ReadMaxBytes,
-			SendMaxBytes:     config.SendMaxBytes,
-			EnableGet:        config.EnableGet,
-			GetURLMaxBytes:   config.GetURLMaxBytes,
-			GetUseFallback:   config.GetUseFallback,
+			Codec:          config.Codec,
+			Protobuf:       config.protobuf(),
+			HTTPClient:     httpClient,
+			URL:            config.URL,
+			BufferPool:     config.BufferPool,
+			ReadMaxBytes:   config.ReadMaxBytes,
+			SendMaxBytes:   config.SendMaxBytes,
+			EnableGet:      config.EnableGet,
+			GetURLMaxBytes: config.GetURLMaxBytes,
+			GetUseFallback: config.GetUseFallback,
 		},
 	)
 	if protocolErr != nil {
@@ -306,24 +300,20 @@ func (c *Client[Req, Res]) newConn(ctx context.Context, streamType StreamType, o
 }
 
 type clientConfig struct {
-	URL                    *url.URL
-	Protocol               protocol
-	Procedure              string
-	Schema                 any
-	Initializer            maybeInitializer
-	CompressMinBytes       int
-	Interceptor            Interceptor
-	CompressionPools       map[string]*compressionPool
-	CompressionNames       []string
-	Codec                  Codec
-	RequestCompressionName string
-	BufferPool             *bufferPool
-	ReadMaxBytes           int
-	SendMaxBytes           int
-	EnableGet              bool
-	GetURLMaxBytes         int
-	GetUseFallback         bool
-	IdempotencyLevel       IdempotencyLevel
+	URL              *url.URL
+	Protocol         protocol
+	Procedure        string
+	Schema           any
+	Initializer      maybeInitializer
+	Interceptor      Interceptor
+	Codec            Codec
+	BufferPool       *bufferPool
+	ReadMaxBytes     int
+	SendMaxBytes     int
+	EnableGet        bool
+	GetURLMaxBytes   int
+	GetUseFallback   bool
+	IdempotencyLevel IdempotencyLevel
 }
 
 func newClientConfig(rawURL string, options []ClientOption) (*clientConfig, *Error) {
@@ -333,11 +323,10 @@ func newClientConfig(rawURL string, options []ClientOption) (*clientConfig, *Err
 	}
 	protoPath := extractProtoPath(url.Path)
 	config := clientConfig{
-		URL:              url,
-		Protocol:         &protocolGRPC{},
-		Procedure:        protoPath,
-		CompressionPools: make(map[string]*compressionPool),
-		BufferPool:       newBufferPool(),
+		URL:        url,
+		Protocol:   &protocolGRPC{},
+		Procedure:  protoPath,
+		BufferPool: newBufferPool(),
 	}
 	withProtoBinaryCodec().applyToClient(&config)
 	for _, opt := range options {

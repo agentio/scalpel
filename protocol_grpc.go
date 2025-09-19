@@ -134,13 +134,7 @@ func (g *grpcHandler) NewConn(
 	ctx := request.Context()
 	// We need to parse metadata before entering the interceptor stack; we'll
 	// send the error to the client later on.
-	_, /*requestCompression*/
-		_, /* reponseCompression */
-		failed := negotiateCompression(
-		g.CompressionPools,
-		getHeaderCanonical(request.Header, grpcHeaderCompression),
-		getHeaderCanonical(request.Header, grpcHeaderAcceptCompression),
-	)
+	var failed *Error
 	if failed == nil {
 		failed = checkServerStreamsCanFlush(g.Spec, responseWriter)
 	}
@@ -168,13 +162,11 @@ func (g *grpcHandler) NewConn(
 		protobuf:   g.Codecs.Protobuf(), // for errors
 		marshaler: grpcMarshaler{
 			envelopeWriter: envelopeWriter{
-				ctx:              ctx,
-				sender:           writeSender{writer: responseWriter},
-				compressionPool:  nil, // g.CompressionPools.Get(responseCompression),
-				codec:            codec,
-				compressMinBytes: g.CompressMinBytes,
-				bufferPool:       g.BufferPool,
-				sendMaxBytes:     g.SendMaxBytes,
+				ctx:          ctx,
+				sender:       writeSender{writer: responseWriter},
+				codec:        codec,
+				bufferPool:   g.BufferPool,
+				sendMaxBytes: g.SendMaxBytes,
 			},
 		},
 		responseWriter:  responseWriter,
@@ -183,12 +175,11 @@ func (g *grpcHandler) NewConn(
 		request:         request,
 		unmarshaler: grpcUnmarshaler{
 			envelopeReader: envelopeReader{
-				ctx:             ctx,
-				reader:          request.Body,
-				codec:           codec,
-				compressionPool: nil, // g.CompressionPools.Get(requestCompression),
-				bufferPool:      g.BufferPool,
-				readMaxBytes:    g.ReadMaxBytes,
+				ctx:          ctx,
+				reader:       request.Body,
+				codec:        codec,
+				bufferPool:   g.BufferPool,
+				readMaxBytes: g.ReadMaxBytes,
 			},
 		},
 	})
@@ -220,10 +211,7 @@ func (g *grpcClient) WriteRequestHeader(_ StreamType, header http.Header) {
 	// gRPC handles compression on a per-message basis, so we don't want to
 	// compress the whole stream. By default, http.Client will ask the server
 	// to gzip the stream if we don't set Accept-Encoding.
-	header["Accept-Encoding"] = []string{compressionIdentity}
-	if acceptCompression := g.CompressionPools.CommaSeparatedNames(); acceptCompression != "" {
-		header[grpcHeaderAcceptCompression] = []string{acceptCompression}
-	}
+	header["Accept-Encoding"] = []string{"identity"}
 	// The gRPC-HTTP2 specification requires this - it flushes out proxies that
 	// don't support HTTP trailers.
 	header["Te"] = []string{"trailers"}
@@ -246,21 +234,18 @@ func (g *grpcClient) NewConn(
 		header,
 	)
 	conn := &grpcClientConn{
-		spec:             spec,
-		peer:             g.Peer(),
-		duplexCall:       duplexCall,
-		compressionPools: nil,
-		bufferPool:       g.BufferPool,
-		protobuf:         g.Protobuf,
+		spec:       spec,
+		peer:       g.Peer(),
+		duplexCall: duplexCall,
+		bufferPool: g.BufferPool,
+		protobuf:   g.Protobuf,
 		marshaler: grpcMarshaler{
 			envelopeWriter: envelopeWriter{
-				ctx:              ctx,
-				sender:           duplexCall,
-				compressionPool:  nil, // g.CompressionPools.Get(g.CompressionName),
-				codec:            g.Codec,
-				compressMinBytes: g.CompressMinBytes,
-				bufferPool:       g.BufferPool,
-				sendMaxBytes:     g.SendMaxBytes,
+				ctx:          ctx,
+				sender:       duplexCall,
+				codec:        g.Codec,
+				bufferPool:   g.BufferPool,
+				sendMaxBytes: g.SendMaxBytes,
 			},
 		},
 		unmarshaler: grpcUnmarshaler{
@@ -286,17 +271,16 @@ func (g *grpcClient) NewConn(
 
 // grpcClientConn works for gRPC.
 type grpcClientConn struct {
-	spec             Spec
-	peer             Peer
-	duplexCall       *duplexHTTPCall
-	compressionPools readOnlyCompressionPools
-	bufferPool       *bufferPool
-	protobuf         Codec // for errors
-	marshaler        grpcMarshaler
-	unmarshaler      grpcUnmarshaler
-	responseHeader   http.Header
-	responseTrailer  http.Header
-	readTrailers     func(*grpcUnmarshaler, *duplexHTTPCall) http.Header
+	spec            Spec
+	peer            Peer
+	duplexCall      *duplexHTTPCall
+	bufferPool      *bufferPool
+	protobuf        Codec // for errors
+	marshaler       grpcMarshaler
+	unmarshaler     grpcUnmarshaler
+	responseHeader  http.Header
+	responseTrailer http.Header
+	readTrailers    func(*grpcUnmarshaler, *duplexHTTPCall) http.Header
 }
 
 func (cc *grpcClientConn) Spec() Spec {
@@ -403,7 +387,6 @@ func (cc *grpcClientConn) validateResponse(response *http.Response) *Error {
 	); err != nil {
 		return err
 	}
-	cc.unmarshaler.compressionPool = nil
 	return nil
 }
 

@@ -61,8 +61,7 @@ type ImportServiceHandler interface {
 // NewImportServiceHandler builds an HTTP handler from the service implementation. It returns the
 // path on which to mount the handler and the handler itself.
 //
-// By default, handlers support the gRPC protocol with the binary Protobuf codecs. They also support
-// gzip compression.
+// By default, handlers support the gRPC protocol with the binary Protobuf codecs.
 func NewImportServiceHandler(svc ImportServiceHandler, opts ...scalpel.HandlerOption) (string, http.Handler) {
 	return "/connect.import.v1.ImportService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {

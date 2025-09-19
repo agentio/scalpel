@@ -94,8 +94,7 @@ type ExampleV1BetaHandler interface {
 // NewExampleV1BetaHandler builds an HTTP handler from the service implementation. It returns the
 // path on which to mount the handler and the handler itself.
 //
-// By default, handlers support the gRPC protocol with the binary Protobuf codecs. They also support
-// gzip compression.
+// By default, handlers support the gRPC protocol with the binary Protobuf codecs.
 func NewExampleV1BetaHandler(svc ExampleV1BetaHandler, opts ...scalpel.HandlerOption) (string, http.Handler) {
 	exampleV1BetaMethods := File_v1beta1service_proto.Services().ByName("ExampleV1beta").Methods()
 	exampleV1BetaMethodHandler := scalpel.NewUnaryHandler(
