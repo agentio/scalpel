@@ -14,11 +14,6 @@
 
 package scalpel
 
-import (
-	"context"
-	"net/http"
-)
-
 // A ClientOption configures a [Client].
 //
 // In addition to any options grouped in the documentation below, remember that
@@ -48,24 +43,6 @@ type HandlerOption interface {
 // WithHandlerOptions composes multiple HandlerOptions into one.
 func WithHandlerOptions(options ...HandlerOption) HandlerOption {
 	return &handlerOptionsOption{options}
-}
-
-// WithRecover adds an interceptor that recovers from panics. The supplied
-// function receives the context, [Spec], request headers, and the recovered
-// value (which may be nil). It must return an error to send back to the
-// client. It may also log the panic, emit metrics, or execute other
-// error-handling logic. Handler functions must be safe to call concurrently.
-//
-// To preserve compatibility with [net/http]'s semantics, this interceptor
-// doesn't handle panics with [http.ErrAbortHandler].
-//
-// By default, handlers don't recover from panics. Because the standard
-// library's [http.Server] recovers from panics by default, this option isn't
-// usually necessary to prevent crashes. Instead, it helps servers collect
-// RPC-specific data during panics and send a more detailed error to
-// clients.
-func WithRecover(handle func(context.Context, Spec, http.Header, any) error) HandlerOption {
-	return WithInterceptors(&recoverHandlerInterceptor{handle: handle})
 }
 
 // WithConditionalHandlerOptions allows procedures in the same service to have
@@ -167,57 +144,6 @@ func WithSendMaxBytes(maxBytes int) Option {
 //	}
 func WithIdempotency(idempotencyLevel IdempotencyLevel) Option {
 	return &idempotencyOption{idempotencyLevel: idempotencyLevel}
-}
-
-// WithInterceptors configures a client or handler's interceptor stack. Repeated
-// WithInterceptors options are applied in order, so
-//
-//	WithInterceptors(A) + WithInterceptors(B, C) == WithInterceptors(A, B, C)
-//
-// Unary interceptors compose like an onion. The first interceptor provided is
-// the outermost layer of the onion: it acts first on the context and request,
-// and last on the response and error.
-//
-// Stream interceptors also behave like an onion: the first interceptor
-// provided is the outermost wrapper for the [StreamingClientConn] or
-// [StreamingHandlerConn]. It's the first to see sent messages and the last to
-// see received messages.
-//
-// Applied to client and handler, WithInterceptors(A, B, ..., Y, Z) produces:
-//
-//	 client.Send()       client.Receive()
-//	       |                   ^
-//	       v                   |
-//	    A ---                 --- A
-//	    B ---                 --- B
-//	    : ...                 ... :
-//	    Y ---                 --- Y
-//	    Z ---                 --- Z
-//	       |                   ^
-//	       v                   |
-//	  = = = = = = = = = = = = = = = =
-//	               network
-//	  = = = = = = = = = = = = = = = =
-//	       |                   ^
-//	       v                   |
-//	    A ---                 --- A
-//	    B ---                 --- B
-//	    : ...                 ... :
-//	    Y ---                 --- Y
-//	    Z ---                 --- Z
-//	       |                   ^
-//	       v                   |
-//	handler.Receive()   handler.Send()
-//	       |                   ^
-//	       |                   |
-//	       '-> handler logic >-'
-//
-// Note that in clients, Send handles the request message(s) and Receive
-// handles the response message(s). For handlers, it's the reverse. Depending
-// on your interceptor's logic, you may need to wrap one method in clients and
-// the other in handlers.
-func WithInterceptors(interceptors ...Interceptor) Option {
-	return &interceptorsOption{interceptors}
 }
 
 // WithOptions composes multiple Options into one.
@@ -339,31 +265,6 @@ type grpcOption struct {
 
 func (o *grpcOption) applyToClient(config *clientConfig) {
 	config.Protocol = &protocolGRPC{}
-}
-
-type interceptorsOption struct {
-	Interceptors []Interceptor
-}
-
-func (o *interceptorsOption) applyToClient(config *clientConfig) {
-	config.Interceptor = o.chainWith(config.Interceptor)
-}
-
-func (o *interceptorsOption) applyToHandler(config *handlerConfig) {
-	config.Interceptor = o.chainWith(config.Interceptor)
-}
-
-func (o *interceptorsOption) chainWith(current Interceptor) Interceptor {
-	if len(o.Interceptors) == 0 {
-		return current
-	}
-	if current == nil && len(o.Interceptors) == 1 {
-		return o.Interceptors[0]
-	}
-	if current == nil && len(o.Interceptors) > 1 {
-		return newChain(o.Interceptors)
-	}
-	return newChain(append([]Interceptor{current}, o.Interceptors...))
 }
 
 type optionsOption struct {

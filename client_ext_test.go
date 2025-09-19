@@ -58,7 +58,6 @@ func TestClientPeer(t *testing.T) {
 			server.Client(),
 			server.URL(),
 			connect.WithClientOptions(opts...),
-			connect.WithInterceptors(&assertPeerInterceptor{t}),
 		)
 		ctx := t.Context()
 		t.Run("unary", func(t *testing.T) {
@@ -162,14 +161,12 @@ func TestSpecSchema(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle(pingv1connect.NewPingServiceHandler(
 		pingServer{},
-		connect.WithInterceptors(&assertSchemaInterceptor{t}),
 	))
 	server := memhttptest.NewServer(t, mux)
 	ctx := t.Context()
 	client := pingv1connect.NewPingServiceClient(
 		server.Client(),
 		server.URL(),
-		connect.WithInterceptors(&assertSchemaInterceptor{t}),
 	)
 	t.Run("unary", func(t *testing.T) {
 		t.Parallel()
@@ -673,84 +670,6 @@ func testClientDeadlineBruteForceLoop(
 	}
 	wg.Wait()
 	t.Logf("Issued %d RPCs.", rpcCount.Load())
-}
-
-type assertPeerInterceptor struct {
-	tb testing.TB
-}
-
-func (a *assertPeerInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
-	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		assert.NotZero(a.tb, req.Peer().Addr)
-		assert.NotZero(a.tb, req.Peer().Protocol)
-		return next(ctx, req)
-	}
-}
-
-func (a *assertPeerInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
-	return func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
-		conn := next(ctx, spec)
-		assert.NotZero(a.tb, conn.Peer().Addr)
-		assert.NotZero(a.tb, conn.Peer().Protocol)
-		assert.NotZero(a.tb, conn.Spec())
-		return conn
-	}
-}
-
-func (a *assertPeerInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
-	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
-		assert.NotZero(a.tb, conn.Peer().Addr)
-		assert.NotZero(a.tb, conn.Peer().Protocol)
-		assert.NotZero(a.tb, conn.Spec())
-		return next(ctx, conn)
-	}
-}
-
-type assertSchemaInterceptor struct {
-	tb testing.TB
-}
-
-func (a *assertSchemaInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
-	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		if !assert.NotNil(a.tb, req.Spec().Schema) {
-			return next(ctx, req)
-		}
-		methodDesc, ok := req.Spec().Schema.(protoreflect.MethodDescriptor)
-		if assert.True(a.tb, ok) {
-			procedure := fmt.Sprintf("/%s/%s", methodDesc.Parent().FullName(), methodDesc.Name())
-			assert.Equal(a.tb, procedure, req.Spec().Procedure)
-		}
-		return next(ctx, req)
-	}
-}
-
-func (a *assertSchemaInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
-	return func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
-		conn := next(ctx, spec)
-		if !assert.NotNil(a.tb, spec.Schema) {
-			return conn
-		}
-		methodDescriptor, ok := spec.Schema.(protoreflect.MethodDescriptor)
-		if assert.True(a.tb, ok) {
-			procedure := fmt.Sprintf("/%s/%s", methodDescriptor.Parent().FullName(), methodDescriptor.Name())
-			assert.Equal(a.tb, procedure, spec.Procedure)
-		}
-		return conn
-	}
-}
-
-func (a *assertSchemaInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
-	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
-		if !assert.NotNil(a.tb, conn.Spec().Schema) {
-			return next(ctx, conn)
-		}
-		methodDesc, ok := conn.Spec().Schema.(protoreflect.MethodDescriptor)
-		if assert.True(a.tb, ok) {
-			procedure := fmt.Sprintf("/%s/%s", methodDesc.Parent().FullName(), methodDesc.Name())
-			assert.Equal(a.tb, procedure, conn.Spec().Procedure)
-		}
-		return next(ctx, conn)
-	}
 }
 
 type rpcErrors struct {

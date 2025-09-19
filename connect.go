@@ -69,7 +69,7 @@ func (s StreamType) String() string {
 }
 
 // StreamingHandlerConn is the server's view of a bidirectional message
-// exchange. Interceptors for streaming RPCs may wrap StreamingHandlerConns.
+// exchange
 //
 // Like the standard library's [http.ResponseWriter], StreamingHandlerConns write
 // response headers to the network with the first call to Send. Any subsequent
@@ -100,7 +100,6 @@ type StreamingHandlerConn interface {
 }
 
 // StreamingClientConn is the client's view of a bidirectional message exchange.
-// Interceptors for streaming RPCs may wrap StreamingClientConns.
 //
 // StreamingClientConns write request headers to the network with the first
 // call to Send. Any subsequent mutations are effectively no-ops. When the
@@ -364,47 +363,6 @@ type receiveConn interface {
 // POST.
 type hasHTTPMethod interface {
 	getHTTPMethod() string
-}
-
-// errStreamingClientConn is a sentinel error implementation of StreamingClientConn.
-type errStreamingClientConn struct {
-	err error
-}
-
-func (c *errStreamingClientConn) Receive(msg any) error {
-	return c.err
-}
-
-func (c *errStreamingClientConn) Spec() Spec {
-	return Spec{}
-}
-
-func (c *errStreamingClientConn) Peer() Peer {
-	return Peer{}
-}
-
-func (c *errStreamingClientConn) Send(msg any) error {
-	return c.err
-}
-
-func (c *errStreamingClientConn) CloseRequest() error {
-	return c.err
-}
-
-func (c *errStreamingClientConn) CloseResponse() error {
-	return c.err
-}
-
-func (c *errStreamingClientConn) RequestHeader() http.Header {
-	return make(http.Header)
-}
-
-func (c *errStreamingClientConn) ResponseHeader() http.Header {
-	return make(http.Header)
-}
-
-func (c *errStreamingClientConn) ResponseTrailer() http.Header {
-	return make(http.Header)
 }
 
 // receiveUnaryResponse unmarshals a message from a StreamingClientConn, then

@@ -96,10 +96,6 @@ func NewClient[Req, Res any](httpClient HTTPClient, url string, options ...Clien
 		}
 		return response, conn.CloseResponse()
 	})
-	if interceptor := config.Interceptor; interceptor != nil {
-		// interceptor is the full chain of all interceptors provided
-		unaryFunc = interceptor.WrapUnary(unaryFunc)
-	}
 	client.callUnary = func(ctx context.Context, request *Request[Req]) (*Response[Res], error) {
 		// To make the specification, peer, and RPC headers visible to the full
 		// interceptor chain (as though they were supplied by the caller), we'll
@@ -280,9 +276,6 @@ func (c *Client[Req, Res]) newConn(ctx context.Context, streamType StreamType, o
 		conn.onRequestSend(onRequestSend)
 		return conn
 	}
-	if interceptor := c.config.Interceptor; interceptor != nil {
-		newConn = interceptor.WrapStreamingClient(newConn)
-	}
 	conn := newConn(ctx, c.config.newSpec(streamType))
 
 	// Set values in the context if there's a call info present
@@ -305,7 +298,6 @@ type clientConfig struct {
 	Procedure        string
 	Schema           any
 	Initializer      maybeInitializer
-	Interceptor      Interceptor
 	Codec            Codec
 	BufferPool       *bufferPool
 	ReadMaxBytes     int

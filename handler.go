@@ -56,9 +56,6 @@ func NewUnaryHandler[Req, Res any](
 		return res, err
 	})
 	config := newHandlerConfig(procedure, StreamTypeUnary, options)
-	if interceptor := config.Interceptor; interceptor != nil {
-		untyped = interceptor.WrapUnary(untyped)
-	}
 	// Given a stream, how should we call the unary function?
 	implementation := func(ctx context.Context, conn StreamingHandlerConn) error {
 		request, err := receiveUnaryRequest[Req](conn, config.Initializer)
@@ -336,7 +333,6 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 
 type handlerConfig struct {
 	Codecs                       map[string]Codec
-	Interceptor                  Interceptor
 	Procedure                    string
 	Schema                       any
 	Initializer                  maybeInitializer
@@ -396,9 +392,6 @@ func newStreamHandler(
 	config *handlerConfig,
 	implementation StreamingHandlerFunc,
 ) *Handler {
-	if ic := config.Interceptor; ic != nil {
-		implementation = ic.WrapStreamingHandler(implementation)
-	}
 	protocolHandlers := config.newProtocolHandlers()
 	return &Handler{
 		spec:             config.newSpec(),

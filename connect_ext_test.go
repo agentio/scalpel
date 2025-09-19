@@ -1100,29 +1100,6 @@ func TestUnavailableIfHostInvalid(t *testing.T) {
 	assert.Equal(t, connect.CodeOf(err), connect.CodeUnavailable)
 }
 
-func TestInterceptorReturnsWrongType(t *testing.T) {
-	t.Parallel()
-	mux := http.NewServeMux()
-	mux.Handle(pingv1connect.NewPingServiceHandler(pingServer{}))
-	server := memhttptest.NewServer(t, mux)
-	client := pingv1connect.NewPingServiceClient(server.Client(), server.URL(), connect.WithInterceptors(connect.UnaryInterceptorFunc(func(next connect.UnaryFunc) connect.UnaryFunc {
-		return func(ctx context.Context, request connect.AnyRequest) (connect.AnyResponse, error) {
-			if _, err := next(ctx, request); err != nil {
-				return nil, err
-			}
-			return connect.NewResponse(&pingv1.CumSumResponse{
-				Sum: 1,
-			}), nil
-		}
-	})))
-	_, err := client.Ping(t.Context(), connect.NewRequest(&pingv1.PingRequest{Text: "hello!"}))
-	assert.NotNil(t, err)
-	var connectErr *connect.Error
-	assert.True(t, errors.As(err, &connectErr))
-	assert.Equal(t, connectErr.Code(), connect.CodeInternal)
-	assert.True(t, strings.Contains(connectErr.Message(), "unexpected client response type"))
-}
-
 func TestHandlerWithReadMaxBytes(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
@@ -1401,7 +1378,6 @@ func TestBidiStreamServerSendsFirstMessage(t *testing.T) {
 			server.Client(),
 			server.URL(),
 			connect.WithClientOptions(opts...),
-			connect.WithInterceptors(&assertPeerInterceptor{t}),
 		)
 		stream := client.CumSum(t.Context())
 		t.Cleanup(func() {
@@ -1725,47 +1701,6 @@ func TestBidiOverHTTP1(t *testing.T) {
 	assert.Equal(t, err.Error(), "unknown: HTTP status 505 HTTP Version Not Supported")
 	assert.Nil(t, stream.CloseRequest())
 	assert.Nil(t, stream.CloseResponse())
-}
-
-func TestHandlerReturnsNilResponse(t *testing.T) {
-	// When user-written handlers return nil responses _and_ nil errors, ensure
-	// that the resulting panic includes at least the name of the procedure.
-	t.Parallel()
-
-	var panics int
-	recoverPanic := func(_ context.Context, spec connect.Spec, _ http.Header, p any) error {
-		panics++
-		assert.NotNil(t, p)
-		str := fmt.Sprint(p)
-		assert.True(
-			t,
-			strings.Contains(str, spec.Procedure),
-			assert.Sprintf("%q does not contain procedure %q", str, spec.Procedure),
-		)
-		return connect.NewError(connect.CodeInternal, errors.New(str))
-	}
-
-	mux := http.NewServeMux()
-	mux.Handle(pingv1connect.NewPingServiceHandler(&pluggablePingServer{
-		ping: func(ctx context.Context, req *connect.Request[pingv1.PingRequest]) (*connect.Response[pingv1.PingResponse], error) {
-			return nil, nil //nolint: nilnil
-		},
-		sum: func(ctx context.Context, req *connect.ClientStream[pingv1.SumRequest]) (*connect.Response[pingv1.SumResponse], error) {
-			return nil, nil //nolint: nilnil
-		},
-	}, connect.WithRecover(recoverPanic)))
-	server := memhttptest.NewServer(t, mux)
-	client := pingv1connect.NewPingServiceClient(server.Client(), server.URL())
-
-	_, err := client.Ping(t.Context(), connect.NewRequest(&pingv1.PingRequest{}))
-	assert.NotNil(t, err)
-	assert.Equal(t, connect.CodeOf(err), connect.CodeInternal)
-
-	_, err = client.Sum(t.Context()).CloseAndReceive()
-	assert.NotNil(t, err)
-	assert.Equal(t, connect.CodeOf(err), connect.CodeInternal)
-
-	assert.Equal(t, panics, 2)
 }
 
 // TestBlankImportCodeGeneration tests that services.connect.go is generated with
